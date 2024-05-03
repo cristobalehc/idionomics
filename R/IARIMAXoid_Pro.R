@@ -1,5 +1,17 @@
+#' Run I-ARIMAX algorithm.
+#'
 #' @export
 #' @importFrom utils globalVariables
+#'
+#' @param dataframe Your dataframe.
+#' @param min_n_subject The minimum number of non NA cases to run the analyses. It will filter cases with more NA's than the threshold. Defaults to 20.
+#' @param minvar The minimum variance for both series (&) to include a case. Defaults to 0.1.
+#' @param y_series A string containing the name of your dependent variable y.
+#' @param x_series A string containing the name of your independent variable x.
+#' @param id_var A string containing your id variable.
+#' @param metaanalysis Bool to run a random effects meta-analysis or not.
+#'
+#' @returns A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis.
 
 #######################################
 ############ I ARIMAX FUNCTION #######
