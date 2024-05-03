@@ -1,13 +1,12 @@
 #' @export
-#' @importFrom dplyr %>%
+#' @importFrom utils globalVariables
+
 #######################################
 ############ I ARIMAX FUNCTION #######
 #####################################
 
-utils::globalVariables(c("count", "var_y", "var_x")) #Declare symbolic global variables.
-
-
 IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.1, y_series, x_series, id_var, metaanalysis = TRUE) {
+
 
     # dataframe = your dataframe's name.
     # min_n_subject = The minimum number of non na cases to run the analyses.
@@ -343,4 +342,5 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.1, y_series
     }
   }
 
+utils::globalVariables(c("count", "var_y", "var_x")) #Declare symbolic global variables.
 
