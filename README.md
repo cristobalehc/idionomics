@@ -17,3 +17,6 @@ You can install the development version of idionomics.
 devtools::install_github("cristobalehc/idionomics")
 ```
 
+#### A word of caution:
+
+This is a developer version, so it can and will contain errors. The first commit was on 02-05-2024, so it is a new and roughly untested project.  
