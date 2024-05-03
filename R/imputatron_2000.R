@@ -1,6 +1,16 @@
+#' Easy copyMeans imputation for time-series.
+#'
 #' @export
 #' @importFrom dplyr %>%
 #' @importFrom rlang `:=`
+#'
+#' @param data A string containing your dataframe name.
+#' @param id_col  A string containing your ID column.
+#' @param time_col  A string containing your time column.
+#' @param cols_of_interest A vector of strings containing the columns you wish to impute.
+#'
+#' @returns It returns a list with a new dataframe with imputed values, longdata objects with and without imputation, your filtered data, wide data used to create the longdata object, and a list with indexes to create the longdata object.
+
 
 # Copy means imputation function:  ~~ IMPUTATRON ~~
 imputatron_2000 <- function(data, id_col, time_col, cols_of_interest) {
