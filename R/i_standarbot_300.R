@@ -1,5 +1,13 @@
+#' Person mean standardize time series.
+#'
 #' @export
 #' @importFrom dplyr %>%
+#'
+#' @param df A dataframe.
+#' @param cols A vector of strings with the variable names you would like to standardize.
+#' @param idvar Your ID variable. It currently accepts only one.
+#'
+#' @returns Will return a dataframe with new person-mean standardized columns appended at the end.
 
 i_standarbot_300 <- function (df, cols, idvar, explanation = TRUE) {
 
