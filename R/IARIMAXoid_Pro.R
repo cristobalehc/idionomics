@@ -17,7 +17,7 @@
 ############ I ARIMAX FUNCTION #######
 #####################################
 
-IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.1, y_series, x_series, id_var, metaanalysis = TRUE) {
+IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series, id_var, metaanalysis = TRUE) {
 
 
     # dataframe = your dataframe's name.
