@@ -5,7 +5,7 @@
 #'
 #' @param dataframe Your dataframe.
 #' @param min_n_subject The minimum number of non NA cases to run the analyses. It will filter cases with more NA's than the threshold. Defaults to 20.
-#' @param minvar The minimum variance for both series (&) to include a case. Defaults to 0.1.
+#' @param minvar The minimum variance for both series (&) to include a case. Defaults to 0.01.
 #' @param y_series A string containing the name of your dependent variable y.
 #' @param x_series A string containing the name of your independent variable x.
 #' @param id_var A string containing your id variable.
@@ -17,7 +17,7 @@
 ############ I ARIMAX FUNCTION #######
 #####################################
 
-IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.1, y_series, x_series, id_var, metaanalysis = TRUE) {
+IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series, id_var, metaanalysis = TRUE) {
 
 
     # dataframe = your dataframe's name.
