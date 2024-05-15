@@ -7,7 +7,7 @@
 IARIMAXoid_Pro(
   dataframe,
   min_n_subject = 20,
-  minvar = 0.1,
+  minvar = 0.01,
   y_series,
   x_series,
   id_var,
@@ -19,7 +19,7 @@ IARIMAXoid_Pro(
 
 \item{min_n_subject}{The minimum number of non NA cases to run the analyses. It will filter cases with more NA's than the threshold. Defaults to 20.}
 
-\item{minvar}{The minimum variance for both series (&) to include a case. Defaults to 0.1.}
+\item{minvar}{The minimum variance for both series (&) to include a case. Defaults to 0.01.}
 
 \item{y_series}{A string containing the name of your dependent variable y.}
 
