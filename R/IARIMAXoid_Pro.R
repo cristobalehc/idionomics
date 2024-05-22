@@ -374,7 +374,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     fixed_formula <- stats::as.formula(paste(y_series, "~", timevar, "+", x_series))
 
     # Construct the random effects formula
-    random_formula <- stats::as.formula(paste("~ 1 +", timevar, "+", x_series, "|", id_var))
+    random_formula <- stats::as.formula(paste("~ 1 +", x_series, "|", id_var))
 
     # Run HLM Model
     hlm_model <- nlme::lme(fixed = fixed_formula, random = random_formula,
@@ -383,7 +383,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     # Create dataframe with random effects.
     df_rand <- as.data.frame(hlm_model$coefficients$random) #Create dataframe
     df_rand <- tibble::rownames_to_column(df_rand) #Add rowname as column
-    colnames(df_rand) <- c(id_var,'Intercept',timevar,x_series) #Change names to legible ones.
+    colnames(df_rand) <- c(id_var,'Intercept',x_series) #Change names to legible ones.
     df_rand$random_slope <- df_rand[[x_series]]+hlm_model$coefficients$fixed[3] #Create random slopes.
 
     #Values for comparison.
