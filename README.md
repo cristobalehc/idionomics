@@ -6,7 +6,8 @@ This is the first version of the "idionomics" package. Currently, it has the fol
 
 * imputatron_2000: Impute data via copy-means.
 * i_standarbot_300: Person-mean center your time-series.
-* IARIMAXoid_Pro: Run the I-ARIMAX algorithm. 
+* IARIMAXoid_Pro: Run the I-ARIMAX algorithm.
+  * 21-05-2024: Added argument to perform a comparison with an HLM growth curve model with linear time. 
 
 #### Usage:
 
