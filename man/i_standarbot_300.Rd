@@ -12,6 +12,8 @@ i_standarbot_300(df, cols, idvar, explanation = TRUE)
 \item{cols}{A vector of strings with the variable names you would like to standardize.}
 
 \item{idvar}{Your ID variable. It currently accepts only one.}
+
+\item{explanation}{Boolean to print explanation of the function (default is TRUE).}
 }
 \value{
 Will return a dataframe with new person-mean standardized columns appended at the end.

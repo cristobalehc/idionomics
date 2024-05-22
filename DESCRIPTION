@@ -17,6 +17,7 @@ Imports:
     forecast,
     longitudinalData,
     metafor,
+    nlme,
     rlang,
     tibble,
     tidyr,

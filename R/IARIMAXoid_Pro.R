@@ -10,158 +10,182 @@
 #' @param x_series A string containing the name of your independent variable x.
 #' @param id_var A string containing your id variable.
 #' @param metaanalysis Bool to run a random effects meta-analysis or not.
+#' @param hlm_compare Optional, to create a comparison with an HLM model, default is FALSE.
+#' @param timevar If hlm_compare is TRUE, then a time variable is needed, default is NULL.
 #'
-#' @returns A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis.
+#' @returns A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
+
 
 #######################################
 ############ I ARIMAX FUNCTION #######
 #####################################
 
-IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series, id_var, metaanalysis = TRUE) {
+IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series, id_var,
+                                metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL) {
 
 
-    # dataframe = your dataframe's name.
-    # min_n_subject = The minimum number of non na cases to run the analyses.
-    # minvar = minimum variance to include a case.
-    # y_series = the name of your dependent variable, as string.
-    # y_series = the name of your independent variable, as string.
-    # id_var = the name of your id varible per subject within your dataframe, as string.
-    # metaanalysis = bool to run a random effects meta-analysis or not.
+  # dataframe = your dataframe's name.
+  # min_n_subject = The minimum number of non na cases to run the analyses.
+  # minvar = minimum variance to include a case.
+  # y_series = the name of your dependent variable, as string.
+  # y_series = the name of your independent variable, as string.
+  # id_var = the name of your id varible per subject within your dataframe, as string.
+  # metaanalysis = bool to run a random effects meta-analysis or not.
+  # hlm_compare = Provide a comparison with an HLM model.
+  # timevar = time variable for hlm model.
 
-    # Convert strings to rlang::symbols
-    y_series_sym <- rlang::sym(y_series)
-    x_series_sym <- rlang::sym(x_series)
-    id_var_sym <- rlang::sym(id_var)
+  # Check if the provided variables are in the dataframe
+  required_vars <- c(y_series, x_series, id_var)
 
-    cat(paste('Filtering your data based on specified minimum non NA per subject and variance'))
-    Sys.sleep(0.4)
-    cat(paste('.'))
-    Sys.sleep(0.4)
-    cat(paste('.'))
-    Sys.sleep(0.4)
-    cat(paste('.',"\n"))
-    Sys.sleep(0.8)
-    cat(paste('',"\n"))
+  if (!all(required_vars %in% colnames(dataframe))) {
+    missing_vars <- required_vars[!required_vars %in% colnames(dataframe)]
+    stop(paste("Cannot find required variables. Check if you spelled the following variables correctly:", paste(missing_vars, collapse = ", ")))
+  }
 
-    # Filter N complete observations with variance conditions
-    counts <- dataframe %>%
-      dplyr::group_by(!!id_var_sym) %>%
-      dplyr::filter(!is.na(!!y_series_sym) & !is.na(!!x_series_sym)) %>%
-      dplyr::summarise(
-        count = dplyr::n(),
-        var_y = stats::var(!!y_series_sym, na.rm = TRUE),
-        var_x = stats::var(!!x_series_sym, na.rm = TRUE),
-        .groups = 'drop'
-      ) %>%
-      dplyr::filter(count >= min_n_subject, var_y >= minvar, var_x >= minvar)
+  if (hlm_compare == TRUE) {
+    if (is.null(timevar)) {
+      stop('You selected hlm_compare, however I cannot compute the model without a time variable. Add it with timevar = "yourtimevariable"')
+    }
 
+    if (!(timevar %in% colnames(dataframe))) {
+      stop(paste0("The time variable '", timevar, "' was not found in the dataframe. Did you spell it correctly?"))
+    }
+  }
 
-    # Get the names of the id_var, and force them as characters
-    names <- as.character(counts[[id_var]])
+  # Convert strings to rlang::symbols
+  y_series_sym <- rlang::sym(y_series)
+  x_series_sym <- rlang::sym(x_series)
+  id_var_sym <- rlang::sym(id_var)
 
-    cat(paste('Your data was filtered:',length(names),'subjects will be used for the analyses',"\n"))
-    Sys.sleep(0.8)
+  cat(paste('Filtering your data based on specified minimum non NA per subject and variance'))
+  Sys.sleep(0.4)
+  cat(paste('.'))
+  Sys.sleep(0.4)
+  cat(paste('.'))
+  Sys.sleep(0.4)
+  cat(paste('.',"\n"))
+  Sys.sleep(0.8)
+  cat(paste('',"\n"))
 
-
-    # Create lists to terms
-    AR_N <- list()
-    I_N <- list()
-    MA_N <- list()
-
-    #Create lists to store the parameters.
-
-    #ARs.
-    AR1 <- list()
-    stderr_AR1 <- list()
-    AR2 <- list()
-    stderr_AR2 <- list()
-    AR3 <- list()
-    stderr_AR3 <- list()
-    AR4 <- list()
-    stderr_AR4 <- list()
-
-    #MAs
-    MA1 <- list()
-    stderr_MA1 <- list()
-    MA2 <- list()
-    stderr_MA2 <- list()
-    MA3 <- list()
-    stderr_MA3 <- list()
-    MA4 <- list()
-    stderr_MA4 <- list()
+  # Filter N complete observations with variance conditions
+  counts <- dataframe %>%
+    dplyr::group_by(!!id_var_sym) %>%
+    dplyr::filter(!is.na(!!y_series_sym) & !is.na(!!x_series_sym)) %>%
+    dplyr::summarise(
+      count = dplyr::n(),
+      var_y = stats::var(!!y_series_sym, na.rm = TRUE),
+      var_x = stats::var(!!x_series_sym, na.rm = TRUE),
+      .groups = 'drop'
+    ) %>%
+    dplyr::filter(count >= min_n_subject, var_y >= minvar, var_x >= minvar)
 
 
-    #Xreg.
-    xreg <- list()
-    stderr_xreg <- list()
+  # Get the names of the id_var, and force them as characters
+  names <- as.character(counts[[id_var]])
+
+  cat(paste('Your data was filtered:',length(names),'subjects will be used for the analyses',"\n"))
+  Sys.sleep(0.8)
 
 
-    # Run auto.arima per case
-    cat(paste('',"\n"))
-    cat(paste('Running I-ARIMAX algorithm'))
-    Sys.sleep(0.4)
-    cat(paste('.'))
-    Sys.sleep(0.4)
-    cat(paste('.'))
-    Sys.sleep(0.4)
-    cat(paste('.',"\n"))
-    Sys.sleep(0.4)
-    cat(paste('',"\n"))
-    Sys.sleep(0.8)
+  # Create lists to terms
+  AR_N <- list()
+  I_N <- list()
+  MA_N <- list()
+
+  #Create lists to store the parameters.
+
+  #ARs.
+  AR1 <- list()
+  stderr_AR1 <- list()
+  AR2 <- list()
+  stderr_AR2 <- list()
+  AR3 <- list()
+  stderr_AR3 <- list()
+  AR4 <- list()
+  stderr_AR4 <- list()
+
+  #MAs
+  MA1 <- list()
+  stderr_MA1 <- list()
+  MA2 <- list()
+  stderr_MA2 <- list()
+  MA3 <- list()
+  stderr_MA3 <- list()
+  MA4 <- list()
+  stderr_MA4 <- list()
+
+
+  #Xreg.
+  xreg <- list()
+  stderr_xreg <- list()
+
+
+  # Run auto.arima per case
+  cat(paste('',"\n"))
+  cat(paste('Running I-ARIMAX algorithm'))
+  Sys.sleep(0.4)
+  cat(paste('.'))
+  Sys.sleep(0.4)
+  cat(paste('.'))
+  Sys.sleep(0.4)
+  cat(paste('.',"\n"))
+  Sys.sleep(0.4)
+  cat(paste('',"\n"))
+  Sys.sleep(0.8)
 
 
 
 
-    #Start case number counter.
-    casen = 0
-    for(i in names) {
+  #Start case number counter.
+  casen = 0
+  for(i in names) {
 
-      #Update case number.
-      casen <- casen + 1
+    #Update case number.
+    casen <- casen + 1
 
-      #Start text.
-      cat(paste('  Applying auto ARIMAX to case: ', as.character(i), ' ... '))
+    #Start text.
+    cat(paste('  Applying auto ARIMAX to case: ', as.character(i), ' ... '))
 
-      ##################################################
-      ############### DEV COMMENT ######################
-      ######## HANDLE NA FOR EAC VECTOR BELOW #########
-      #################################################
+    ##################################################
+    ############### DEV COMMENT ######################
+    ######## HANDLE NA FOR EAC VECTOR BELOW #########
+    #################################################
 
-      #Extract y vector.
-      y_vector <- dataframe %>%
-        dplyr::filter(!!id_var_sym == i) %>%
-        dplyr::pull(!!y_series_sym) #Should I add NA omit? I think so...
+    #Extract y vector.
+    y_vector <- dataframe %>%
+      dplyr::filter(!!id_var_sym == i) %>%
+      dplyr::pull(!!y_series_sym) #Should I add NA omit? I think so...
 
-      #Extract x vector.
-      x_vector <- dataframe %>%
-        dplyr::filter(!!id_var_sym == i) %>%
-        dplyr::pull(!!x_series_sym) #Should I add NA omit? I think so...
+    #Extract x vector.
+    x_vector <- dataframe %>%
+      dplyr::filter(!!id_var_sym == i) %>%
+      dplyr::pull(!!x_series_sym) #Should I add NA omit? I think so...
 
-      #Run model.
-      model <- forecast::auto.arima(y = y_vector, xreg = x_vector, approximation = FALSE, stepwise = FALSE)
-      #Tidy the model.
-      tidymodel <- broom::tidy(model)
-      #Cast the tidy dataframe.
-      tidymodel <-  tidyr::pivot_wider(tidymodel, names_from ='term', values_from=c('estimate','std.error'))
+    #Run model.
+    model <- forecast::auto.arima(y = y_vector, xreg = x_vector, approximation = FALSE, stepwise = FALSE)
+    #Tidy the model.
+    tidymodel <- broom::tidy(model)
+    #Cast the tidy dataframe.
+    tidymodel <-  tidyr::pivot_wider(tidymodel, names_from ='term', values_from=c('estimate','std.error'))
 
-      #Fill the number of ARIMA parameteres lists: Just the number of AR I MA processes involved.
-      AR_N[[i]] <- model$arma[1] #Fill AR list.
-      I_N[[i]] <- model$arma[6] #Fill I list.
-      MA_N[[i]] <- model$arma[2] #Fill MA List.
+    #Fill the number of ARIMA parameteres lists: Just the number of AR I MA processes involved.
+    AR_N[[i]] <- model$arma[1] #Fill AR list.
+    I_N[[i]] <- model$arma[6] #Fill I list.
+    MA_N[[i]] <- model$arma[2] #Fill MA List.
 
-      ##############################
-      ###### FIL AR PARAMETERS #####
-      #############################
+    ##############################
+    ###### FIL AR PARAMETERS #####
+    #############################
 
-      #Fill AR1 parameters conditionally to their existence.
-      if ('estimate_ar1' %in% colnames(tidymodel)) {
-        AR1[[i]] <- tidymodel$estimate_ar1
-        stderr_AR1[[i]] <- tidymodel$std.error_ar1
-      }
-      else {
-        AR1[[i]] <- NA
-        stderr_AR1[[i]] <- NA
-      }
+    #Fill AR1 parameters conditionally to their existence.
+    if ('estimate_ar1' %in% colnames(tidymodel)) {
+      AR1[[i]] <- tidymodel$estimate_ar1
+      stderr_AR1[[i]] <- tidymodel$std.error_ar1
+    }
+    else {
+      AR1[[i]] <- NA
+      stderr_AR1[[i]] <- NA
+    }
 
 
     #Fill AR2 parameters conditionally to their existence.
@@ -258,56 +282,181 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   ######## CREATE DATAFRAME TO RETURN ###########
   ###############################################
 
-    # Convert the lists to vectors
-    AR_vector <- unlist(AR_N)
-    I_vector <- unlist(I_N)
-    MA_vector <- unlist(MA_N)
-    AR1_vector <- unlist(AR1)
-    stderr_AR1_vector <- unlist(stderr_AR1)
-    AR2_vector <- unlist(AR2)
-    stderr_AR2_vector <- unlist(stderr_AR2)
-    AR3_vector <- unlist(AR3)
-    stderr_AR3_vector <- unlist(stderr_AR3)
-    AR4_vector <- unlist(AR4)
-    stderr_AR4_vector <- unlist(stderr_AR4)
-    MA1_vector <- unlist(MA1)
-    stderr_MA1_vector <- unlist(stderr_MA1)
-    MA2_vector <- unlist(MA2)
-    stderr_MA2_vector <- unlist(stderr_MA2)
-    MA3_vector <- unlist(MA3)
-    stderr_MA3_vector <- unlist(stderr_MA3)
-    MA4_vector <- unlist(MA4)
-    stderr_MA4_vector <- unlist(stderr_MA4)
-    xreg_vector <- unlist(xreg)
-    stderr_xreg_vector <- unlist(stderr_xreg)
+  # Convert the lists to vectors
+  AR_vector <- unlist(AR_N)
+  I_vector <- unlist(I_N)
+  MA_vector <- unlist(MA_N)
+  AR1_vector <- unlist(AR1)
+  stderr_AR1_vector <- unlist(stderr_AR1)
+  AR2_vector <- unlist(AR2)
+  stderr_AR2_vector <- unlist(stderr_AR2)
+  AR3_vector <- unlist(AR3)
+  stderr_AR3_vector <- unlist(stderr_AR3)
+  AR4_vector <- unlist(AR4)
+  stderr_AR4_vector <- unlist(stderr_AR4)
+  MA1_vector <- unlist(MA1)
+  stderr_MA1_vector <- unlist(stderr_MA1)
+  MA2_vector <- unlist(MA2)
+  stderr_MA2_vector <- unlist(stderr_MA2)
+  MA3_vector <- unlist(MA3)
+  stderr_MA3_vector <- unlist(stderr_MA3)
+  MA4_vector <- unlist(MA4)
+  stderr_MA4_vector <- unlist(stderr_MA4)
+  xreg_vector <- unlist(xreg)
+  stderr_xreg_vector <- unlist(stderr_xreg)
 
 
-    # Combine into a data frame
-    results_df <- data.frame(
-      Name = names,
-      nAR = AR_vector,
-      nI = I_vector,
-      nMA = MA_vector,
-      AR1 = AR1_vector,
-      stderr_AR1 = stderr_AR1_vector,
-      AR2 = AR2_vector,
-      stderr_AR2 = stderr_AR2_vector,
-      AR3 = AR3_vector,
-      stderr_AR3 = stderr_AR3_vector,
-      AR4 = AR4_vector,
-      stderr_AR4 = stderr_AR4_vector,
-      MA1 = MA1_vector,
-      stderr_MA1 = stderr_MA1_vector,
-      MA2 = MA2_vector,
-      stderr_MA2 = stderr_MA2_vector,
-      MA3 = MA3_vector,
-      stderr_MA3 = stderr_MA3_vector,
-      MA4 = MA4_vector,
-      stderr_MA4 = stderr_MA4_vector,
-      xreg = xreg_vector,
-      stderr_xreg = stderr_xreg_vector)
+  # Combine into a data frame
+  results_df <- data.frame(
+    Name = names,
+    nAR = AR_vector,
+    nI = I_vector,
+    nMA = MA_vector,
+    AR1 = AR1_vector,
+    stderr_AR1 = stderr_AR1_vector,
+    AR2 = AR2_vector,
+    stderr_AR2 = stderr_AR2_vector,
+    AR3 = AR3_vector,
+    stderr_AR3 = stderr_AR3_vector,
+    AR4 = AR4_vector,
+    stderr_AR4 = stderr_AR4_vector,
+    MA1 = MA1_vector,
+    stderr_MA1 = stderr_MA1_vector,
+    MA2 = MA2_vector,
+    stderr_MA2 = stderr_MA2_vector,
+    MA3 = MA3_vector,
+    stderr_MA3 = stderr_MA3_vector,
+    MA4 = MA4_vector,
+    stderr_MA4 = stderr_MA4_vector,
+    xreg = xreg_vector,
+    stderr_xreg = stderr_xreg_vector)
 
-    if (metaanalysis == TRUE){
+  #Run with hlm compare.
+  if (hlm_compare == TRUE){
+
+
+    Sys.sleep(0.8)
+    cat(paste('',"\n"))
+
+
+    Sys.sleep(1.2)
+    cat(paste0('',"\n",
+               '            1. SUMMARY OF ARIMA PARAMETERS',"\n",
+               ' ',"\n",
+               " The proportion of AR of order 1 or more is ", round(prop.table(table(results_df$nAR >= 1))[2], 2), "\n",
+               " The proportion of I of order 1 or more is ", round(prop.table(table(results_df$nI >= 1))[2], 2), "\n",
+               " The proportion of MA of order 1 or more is ", round(prop.table(table(results_df$nMA >= 1))[2], 2), "\n"))
+
+    Sys.sleep(0.8)
+    cat(paste('',"\n"))
+    cat(paste('',"\n"))
+    cat(paste('Running random-effects meta analysis & HLM model for comparison',"\n"))
+    cat(paste('',"\n"))
+
+    #Run random effects meta analysis.
+    meta_analysis <- metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg)
+
+    Sys.sleep(2)
+    cat(paste('',"\n"))
+    cat(paste('',"\n"))
+    cat(paste('',"\n"))
+    cat(paste0('            2. SUMMARY OF RANDOM EFFECTS META ANALYSIS',"\n"))
+    print(summary(meta_analysis))
+
+
+    #Filter dataframe to be consistent with I-ARIMAX data.
+    dataframehlm <- dataframe %>%
+      dplyr::filter(!!id_var_sym %in% names)
+
+
+    #Run HLM Model.
+    # Construct the fixed effects formula
+    fixed_formula <- stats::as.formula(paste(y_series, "~", timevar, "+", x_series))
+
+    # Construct the random effects formula
+    random_formula <- stats::as.formula(paste("~ 1 +", timevar, "+", x_series, "|", id_var))
+
+    # Run HLM Model
+    hlm_model <- nlme::lme(fixed = fixed_formula, random = random_formula,
+                           data = dataframehlm, na.action = stats::na.omit)
+
+    # Create dataframe with random effects.
+    df_rand <- as.data.frame(hlm_model$coefficients$random) #Create dataframe
+    df_rand <- tibble::rownames_to_column(df_rand) #Add rowname as column
+    colnames(df_rand) <- c(id_var,'Intercept',timevar,x_series) #Change names to legible ones.
+    df_rand$random_slope <- df_rand[[x_series]]+hlm_model$coefficients$fixed[3] #Create random slopes.
+
+    #Values for comparison.
+    iarimaxest <- meta_analysis$b[1] #Extract random meta analysis estimate.
+    iarimaxse <- meta_analysis$se #Extract random meta analysis se.
+    hlmest <- hlm_model$coefficients$fixed[[3]] #Extract the fixed effect of x_series, the order depends on the formula.
+    hlmse <- sqrt(hlm_model$varFix[9]) #Extract the se, for the fixed effect of x_series, the order depends on the formula.
+    iarimaxmean <- mean(results_df$xreg) #Calculate mean of individual xregs.
+    iarimaxvar <- stats::var(results_df$xreg) #Calculate variance of individual xregs.
+    hlmmean <- mean(df_rand$random_slope) #Calculate mean of random slopes.
+    hlmvar <- stats::var(df_rand$random_slope) #Calculate variance of random slopes.
+
+    #Opposite cases.
+    num_oppcase_iarimax <- ifelse(meta_analysis$b[1] > 0,sum(results_df$xreg <0),sum(results_df$xreg > 0))
+    num_oppcase_hlm <- ifelse(hlm_model$coefficients$fixed[[3]] > 0,sum(df_rand$random_slope <0),sum(df_rand$random_slope > 0))
+
+    iarimaxtohlm <- list(IarimaxEstimate = iarimaxest,
+                         IarimaxSE = iarimaxse,
+                         HLMEstimate = hlmest,
+                         HLMSE = hlmse,
+                         IarimaxMean = iarimaxmean,
+                         IarimaxVariance = iarimaxvar,
+                         HLMMean = hlmmean,
+                         HLMVariance = hlmvar,
+                         OppositesIarimax = num_oppcase_iarimax,
+                         OppositesHLM = num_oppcase_hlm)
+    Sys.sleep(2)
+    #Print Summary.
+    cat(paste('',"\n"))
+    cat(paste('',"\n"))
+    cat(paste0('            3. I-ARIMAX V/S HLM COMPARISON ',"\n",
+               '   ',"\n",
+               '   OMNIBUS - RMA ESTIMATES VS HLM',"\n",
+               "\n",
+               '            I-ARIMAX                         HLM     ',"\n",
+               '   ----------------------------------------------------',"\n",
+               '   IARIMAX est.   IARIMAX s.e.       HLM est.   HLM s.e.',"\n",
+               '      ',round(iarimaxest,3),
+               '          ',round(iarimaxse,3),'            ',
+               round(hlmest,3),'      ',round(hlmse,3),"\n",
+               "\n",
+               '   SUMMARY OF INDIVIDUAL EFFECTS',"\n",
+               "\n",
+               '    AVERAGES:',"\n",
+               '     * IARIMAX mean effect:                       ',round(iarimaxmean,4),"\n",
+               '     * HLM mean effect:                           ',round(hlmmean,4),"\n",
+               '     * IARIMAX variance of individual effects:    ',round(iarimaxvar,4),"\n",
+               '     * HLM variance of random effects:            ',round(hlmvar,4),"\n",
+               '    OPPOSITES:',"\n",
+               '     * IARIMAX N cases with opposite direction:   ',round(num_oppcase_iarimax,4),"\n",
+               '     * HLM N cases with opposite direction:       ',round(num_oppcase_hlm,4)))
+
+
+    Sys.sleep(1.2)
+    cat(paste('',"\n"))
+    cat(paste('.'))
+    Sys.sleep(0.4)
+    cat(paste('.'))
+    Sys.sleep(0.4)
+    cat(paste('.'))
+    Sys.sleep(0.4)
+    cat(paste('',"\n"))
+    Sys.sleep(0.8)
+    cat(paste('I-ARIMAX algorithm finished.',"\n"))
+    cat(paste('',"\n"))
+
+    #Return values.
+    return(list(results_df = results_df,meta_analysis = meta_analysis, hlm_mod = hlm_model, rand_df = df_rand, comparison = iarimaxtohlm))
+  }
+
+  #Run just the meta analysis.
+  else if (metaanalysis == TRUE & hlm_compare == FALSE){
+
     Sys.sleep(0.8)
     cat(paste('',"\n"))
     cat(paste('Running random-effects meta analysis.',"\n"))
@@ -316,12 +465,11 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     meta_analysis <- metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg)
 
     Sys.sleep(0.8)
-    cat(paste('I-ARIMAX algorithm finished.',"\n"))
     cat(paste('',"\n"))
 
 
     cat(paste0('',"\n",
-               '1. Summary of ARIMA parameters.',"\n",
+               '            1. SUMMARY OF ARIMA PARAMETERS',"\n",
                ' ',"\n",
                " The proportion of AR of order 1 or more is ", round(prop.table(table(results_df$nAR >= 1))[2], 2), "\n",
                " The proportion of I of order 1 or more is ", round(prop.table(table(results_df$nI >= 1))[2], 2), "\n",
@@ -329,30 +477,53 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
 
     Sys.sleep(0.8)
     cat(paste('',"\n"))
-    cat(paste0('2. Summary of Random-Effects meta-analysis.',"\n"))
+    cat(paste0('            2. SUMMARY OF RANDOM EFFECTS META ANALYSIS',"\n"))
     print(summary(meta_analysis))
+    Sys.sleep(1.2)
+    cat(paste('',"\n"))
+    cat(paste('.'))
+    Sys.sleep(0.4)
+    cat(paste('.'))
+    Sys.sleep(0.4)
+    cat(paste('.'))
+    Sys.sleep(0.4)
+    cat(paste('',"\n"))
+    Sys.sleep(0.8)
+    cat(paste('I-ARIMAX algorithm finished.',"\n"))
+    cat(paste('',"\n"))
 
     return(list(results_df = results_df,meta_analysis = meta_analysis))
-    }
-    else {
 
-      Sys.sleep(0.8)
-      cat(paste('I-ARIMAX algorithm finished.',"\n"))
-      cat(paste('',"\n"))
+  }
+  else {
 
-      cat(paste0('',"\n",
-                 '1. Summary of ARIMA parameters:',"\n",
-                 "The proportion of AR of order 1 or more is ", round(prop.table(table(results_df$nAR >= 1))[2], 2), "\n",
-                 "The proportion of I of order 1 or more is ", round(prop.table(table(results_df$nI >= 1))[2], 2), "\n",
-                 "The proportion of MA of order 1 or more is ", round(prop.table(table(results_df$nMA >= 1))[2], 2), "\n"))
+    Sys.sleep(0.8)
+    cat(paste('',"\n"))
 
-      Sys.sleep(0.8)
-      cat(paste('',"\n"))
-      cat(paste0('2. No Random-Effects meta-analysis was done.',"\n"))
+    cat(paste0('',"\n",
+               '            1. SUMMARY OF ARIMA PARAMETERS',"\n",
+               "The proportion of AR of order 1 or more is ", round(prop.table(table(results_df$nAR >= 1))[2], 2), "\n",
+               "The proportion of I of order 1 or more is ", round(prop.table(table(results_df$nI >= 1))[2], 2), "\n",
+               "The proportion of MA of order 1 or more is ", round(prop.table(table(results_df$nMA >= 1))[2], 2), "\n"))
+
+    Sys.sleep(0.8)
+    cat(paste('',"\n"))
+    cat(paste0('2. No Random-Effects meta-analysis or HLM model comparison were made.',"\n"))
+    Sys.sleep(1.2)
+    cat(paste('',"\n"))
+    cat(paste('.'))
+    Sys.sleep(0.4)
+    cat(paste('.'))
+    Sys.sleep(0.4)
+    cat(paste('.'))
+    Sys.sleep(0.4)
+    cat(paste('',"\n"))
+    Sys.sleep(0.8)
+    cat(paste('I-ARIMAX algorithm finished.',"\n"))
+    cat(paste('',"\n"))
     return(list(results_df = results_df))
 
-    }
   }
+}
 
 utils::globalVariables(c("count", "var_y", "var_x")) #Declare symbolic global variables.
-

@@ -11,7 +11,9 @@ IARIMAXoid_Pro(
   y_series,
   x_series,
   id_var,
-  metaanalysis = TRUE
+  metaanalysis = TRUE,
+  hlm_compare = FALSE,
+  timevar = NULL
 )
 }
 \arguments{
@@ -28,9 +30,13 @@ IARIMAXoid_Pro(
 \item{id_var}{A string containing your id variable.}
 
 \item{metaanalysis}{Bool to run a random effects meta-analysis or not.}
+
+\item{hlm_compare}{Optional, to create a comparison with an HLM model, default is FALSE.}
+
+\item{timevar}{If hlm_compare is TRUE, then a time variable is needed, default is NULL.}
 }
 \value{
-A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis.
+A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
 }
 \description{
 Run I-ARIMAX algorithm.
