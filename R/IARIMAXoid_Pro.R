@@ -21,7 +21,7 @@
 #####################################
 
 IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series, id_var,
-                                metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL) {
+                           metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL) {
 
 
   # dataframe = your dataframe's name.
@@ -119,6 +119,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   xreg <- list()
   stderr_xreg <- list()
 
+  #Exclude cases where arimax don't work.
+  exclude <- list()
 
   # Run auto.arima per case
   cat(paste('',"\n"))
@@ -161,8 +163,48 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       dplyr::filter(!!id_var_sym == i) %>%
       dplyr::pull(!!x_series_sym) #Should I add NA omit? I think so...
 
-    #Run model.
-    model <- forecast::auto.arima(y = y_vector, xreg = x_vector, approximation = FALSE, stepwise = FALSE)
+
+    #Run model and catch errors: TryCatch will do that.
+    model <- tryCatch(
+      {
+        forecast::auto.arima(y = y_vector, xreg = x_vector, approximation = FALSE, stepwise = FALSE)
+      },
+      error = function(e) {
+        cat("\n","\n",'  Error running ARIMAX model for case: ',as.character(i), "\n","  ",e$message,"\n")
+        NULL #Set model as NULL
+      }
+    )
+
+    #Fill the list with NA if the model is null
+
+    if (is.null(model)) {
+      AR_N[[i]] <- NA
+      I_N[[i]] <- NA
+      MA_N[[i]] <- NA
+      AR1[[i]] <- NA
+      stderr_AR1[[i]] <- NA
+      AR2[[i]] <- NA
+      stderr_AR2[[i]] <- NA
+      AR3[[i]] <- NA
+      stderr_AR3[[i]] <- NA
+      AR4[[i]] <- NA
+      stderr_AR4[[i]] <- NA
+      MA1[[i]] <- NA
+      stderr_MA1[[i]] <- NA
+      MA2[[i]] <- NA
+      stderr_MA2[[i]] <- NA
+      MA3[[i]] <- NA
+      stderr_MA3[[i]] <- NA
+      MA4[[i]] <- NA
+      stderr_MA4[[i]] <- NA
+      xreg[[i]] <- NA
+      stderr_xreg[[i]] <- NA
+      exclude[[i]] <- i
+      cat("\n","   Skipping case due to error: ")
+      cat("        ... ",round((casen/(length(names))*100),digits = 1),'% completed',"\n","\n") #Keep printing advance percentage.
+      next #Skip the next part of this iteration of the loop, so it doesn't get overriden and throws an error.
+    }
+
     #Tidy the model.
     tidymodel <- broom::tidy(model)
     #Cast the tidy dataframe.
@@ -331,6 +373,9 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     xreg = xreg_vector,
     stderr_xreg = stderr_xreg_vector)
 
+  #Set id variable, as id_var for consistency.
+  colnames(results_df)[1] <- id_var
+
   #Run with hlm compare.
   if (hlm_compare == TRUE){
 
@@ -366,7 +411,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
 
     #Filter dataframe to be consistent with I-ARIMAX data.
     dataframehlm <- dataframe %>%
-      dplyr::filter(!!id_var_sym %in% names)
+      dplyr::filter(!!id_var_sym %in% names) %>% #Filter cases based on minvar and non NA.
+      dplyr::filter(!(!!id_var_sym) %in% exclude) #Filter cases excluded due to arimax not working.
 
 
     #Run HLM Model.
@@ -376,82 +422,99 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     # Construct the random effects formula
     random_formula <- stats::as.formula(paste("~ 1 +", x_series, "|", id_var))
 
-    # Run HLM Model
-    hlm_model <- nlme::lme(fixed = fixed_formula, random = random_formula,
-                           data = dataframehlm, na.action = stats::na.omit)
+    # Run HLM Model with tryCatch.
+    hlm_model <- tryCatch(
+      {
+        nlme::lme(fixed = fixed_formula, random = random_formula,
+                  data = dataframehlm, na.action = stats::na.omit)
+      },
+      error = function(e) {
+        cat('Error running HLM model:', e$message, "\n")
+        NULL # Set hlm_model as NULL in case of error
+      }
+    )
 
-    # Create dataframe with random effects.
-    df_rand <- as.data.frame(hlm_model$coefficients$random) #Create dataframe
-    df_rand <- tibble::rownames_to_column(df_rand) #Add rowname as column
-    colnames(df_rand) <- c(id_var,'Intercept',x_series) #Change names to legible ones.
-    df_rand$random_slope <- df_rand[[x_series]]+hlm_model$coefficients$fixed[3] #Create random slopes.
+    #Stop early if hlm model had an error.
+    if (is.null(hlm_model)){
+      cat('Skipping HLM model calculations due to error. Returning hlm_model = FALSE model. \n')
+      return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude))
+    }
 
-    #Values for comparison.
-    iarimaxest <- meta_analysis$b[1] #Extract random meta analysis estimate.
-    iarimaxse <- meta_analysis$se #Extract random meta analysis se.
-    hlmest <- hlm_model$coefficients$fixed[[3]] #Extract the fixed effect of x_series, the order depends on the formula.
-    hlmse <- sqrt(hlm_model$varFix[9]) #Extract the se, for the fixed effect of x_series, the order depends on the formula.
-    iarimaxmean <- mean(results_df$xreg) #Calculate mean of individual xregs.
-    iarimaxvar <- stats::var(results_df$xreg) #Calculate variance of individual xregs.
-    hlmmean <- mean(df_rand$random_slope) #Calculate mean of random slopes.
-    hlmvar <- stats::var(df_rand$random_slope) #Calculate variance of random slopes.
+    #If hlm model is not null, then do the rest of the calculations.
+    else {
+      # Create dataframe with random effects.
+      df_rand <- as.data.frame(hlm_model$coefficients$random) #Create dataframe
+      df_rand <- tibble::rownames_to_column(df_rand) #Add rowname as column
+      colnames(df_rand) <- c(id_var,'Intercept',x_series) #Change names to legible ones.
+      df_rand$random_slope <- df_rand[[x_series]]+hlm_model$coefficients$fixed[3] #Create random slopes.
 
-    #Opposite cases.
-    num_oppcase_iarimax <- ifelse(meta_analysis$b[1] > 0,sum(results_df$xreg <0),sum(results_df$xreg > 0))
-    num_oppcase_hlm <- ifelse(hlm_model$coefficients$fixed[[3]] > 0,sum(df_rand$random_slope <0),sum(df_rand$random_slope > 0))
+      #Values for comparison.
+      iarimaxest <- meta_analysis$b[1] #Extract random meta analysis estimate.
+      iarimaxse <- meta_analysis$se #Extract random meta analysis se.
+      hlmest <- hlm_model$coefficients$fixed[[3]] #Extract the fixed effect of x_series, the order depends on the formula.
+      hlmse <- sqrt(hlm_model$varFix[9]) #Extract the se, for the fixed effect of x_series, the order depends on the formula.
+      iarimaxmean <- mean(results_df$xreg, na.rm = TRUE) #Calculate mean of individual xregs.
+      iarimaxvar <- stats::var(results_df$xreg, na.rm = TRUE) #Calculate variance of individual xregs.
+      hlmmean <- mean(df_rand$random_slope, na.rm = TRUE) #Calculate mean of random slopes.
+      hlmvar <- stats::var(df_rand$random_slope, na.rm = TRUE) #Calculate variance of random slopes.
 
-    iarimaxtohlm <- list(IarimaxEstimate = iarimaxest,
-                         IarimaxSE = iarimaxse,
-                         HLMEstimate = hlmest,
-                         HLMSE = hlmse,
-                         IarimaxMean = iarimaxmean,
-                         IarimaxVariance = iarimaxvar,
-                         HLMMean = hlmmean,
-                         HLMVariance = hlmvar,
-                         OppositesIarimax = num_oppcase_iarimax,
-                         OppositesHLM = num_oppcase_hlm)
-    Sys.sleep(2)
-    #Print Summary.
-    cat(paste('',"\n"))
-    cat(paste('',"\n"))
-    cat(paste0('            3. I-ARIMAX V/S HLM COMPARISON ',"\n",
-               '   ',"\n",
-               '   OMNIBUS - RMA ESTIMATES VS HLM',"\n",
-               "\n",
-               '            I-ARIMAX                         HLM     ',"\n",
-               '   ----------------------------------------------------',"\n",
-               '   IARIMAX est.   IARIMAX s.e.       HLM est.   HLM s.e.',"\n",
-               '      ',round(iarimaxest,3),
-               '          ',round(iarimaxse,3),'            ',
-               round(hlmest,3),'      ',round(hlmse,3),"\n",
-               "\n",
-               '   SUMMARY OF INDIVIDUAL EFFECTS',"\n",
-               "\n",
-               '    AVERAGES:',"\n",
-               '     * IARIMAX mean effect:                       ',round(iarimaxmean,4),"\n",
-               '     * HLM mean effect:                           ',round(hlmmean,4),"\n",
-               '     * IARIMAX variance of individual effects:    ',round(iarimaxvar,4),"\n",
-               '     * HLM variance of random effects:            ',round(hlmvar,4),"\n",
-               '    OPPOSITES:',"\n",
-               '     * IARIMAX N cases with opposite direction:   ',round(num_oppcase_iarimax,4),"\n",
-               '     * HLM N cases with opposite direction:       ',round(num_oppcase_hlm,4)))
+      #Opposite cases.
+      num_oppcase_iarimax <- ifelse(meta_analysis$b[1] > 0,sum(results_df$xreg <0, na.rm = TRUE),sum(results_df$xreg > 0, na.rm = TRUE))
+      num_oppcase_hlm <- ifelse(hlm_model$coefficients$fixed[[3]] > 0,sum(df_rand$random_slope <0, na.rm = TRUE),sum(df_rand$random_slope > 0, na.rm = TRUE))
+
+      iarimaxtohlm <- list(IarimaxEstimate = iarimaxest,
+                           IarimaxSE = iarimaxse,
+                           HLMEstimate = hlmest,
+                           HLMSE = hlmse,
+                           IarimaxMean = iarimaxmean,
+                           IarimaxVariance = iarimaxvar,
+                           HLMMean = hlmmean,
+                           HLMVariance = hlmvar,
+                           OppositesIarimax = num_oppcase_iarimax,
+                           OppositesHLM = num_oppcase_hlm)
+      Sys.sleep(2)
+      #Print Summary.
+      cat(paste('',"\n"))
+      cat(paste('',"\n"))
+      cat(paste0('            3. I-ARIMAX V/S HLM COMPARISON ',"\n",
+                 '   ',"\n",
+                 '   OMNIBUS - RMA ESTIMATES VS HLM',"\n",
+                 "\n",
+                 '            I-ARIMAX                         HLM     ',"\n",
+                 '   ----------------------------------------------------',"\n",
+                 '   IARIMAX est.   IARIMAX s.e.       HLM est.   HLM s.e.',"\n",
+                 '      ',round(iarimaxest,3),
+                 '          ',round(iarimaxse,3),'            ',
+                 round(hlmest,3),'      ',round(hlmse,3),"\n",
+                 "\n",
+                 '   SUMMARY OF INDIVIDUAL EFFECTS',"\n",
+                 "\n",
+                 '    AVERAGES:',"\n",
+                 '     * IARIMAX mean effect:                       ',round(iarimaxmean,4),"\n",
+                 '     * HLM mean effect:                           ',round(hlmmean,4),"\n",
+                 '     * IARIMAX variance of individual effects:    ',round(iarimaxvar,4),"\n",
+                 '     * HLM variance of random effects:            ',round(hlmvar,4),"\n",
+                 '    OPPOSITES:',"\n",
+                 '     * IARIMAX N cases with opposite direction:   ',round(num_oppcase_iarimax,4),"\n",
+                 '     * HLM N cases with opposite direction:       ',round(num_oppcase_hlm,4)))
 
 
-    Sys.sleep(1.2)
-    cat(paste('',"\n"))
-    cat(paste('.'))
-    Sys.sleep(0.4)
-    cat(paste('.'))
-    Sys.sleep(0.4)
-    cat(paste('.'))
-    Sys.sleep(0.4)
-    cat(paste('',"\n"))
-    Sys.sleep(0.8)
-    cat(paste('I-ARIMAX algorithm finished.',"\n"))
-    cat(paste('',"\n"))
+      Sys.sleep(1.2)
+      cat(paste('',"\n"))
+      cat(paste('.'))
+      Sys.sleep(0.4)
+      cat(paste('.'))
+      Sys.sleep(0.4)
+      cat(paste('.'))
+      Sys.sleep(0.4)
+      cat(paste('',"\n"))
+      Sys.sleep(0.8)
+      cat(paste('I-ARIMAX algorithm finished.',"\n"))
+      cat(paste('',"\n"))
 
-    #Return values.
-    return(list(results_df = results_df,meta_analysis = meta_analysis, hlm_mod = hlm_model, rand_df = df_rand, comparison = iarimaxtohlm))
+      #Return values.
+      return(list(results_df = results_df,meta_analysis = meta_analysis, hlm_mod = hlm_model, rand_df = df_rand, comparison = iarimaxtohlm, error_arimax_skipped = exclude))
+    }
   }
 
   #Run just the meta analysis.
@@ -492,7 +555,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     cat(paste('I-ARIMAX algorithm finished.',"\n"))
     cat(paste('',"\n"))
 
-    return(list(results_df = results_df,meta_analysis = meta_analysis))
+    return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude))
 
   }
   else {
@@ -521,7 +584,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     Sys.sleep(0.8)
     cat(paste('I-ARIMAX algorithm finished.',"\n"))
     cat(paste('',"\n"))
-    return(list(results_df = results_df))
+    return(list(results_df = results_df, error_arimax_skipped = exclude))
 
   }
 }
