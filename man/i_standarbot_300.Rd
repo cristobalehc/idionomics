@@ -4,7 +4,7 @@
 \alias{i_standarbot_300}
 \title{Person mean standardize time series.}
 \usage{
-i_standarbot_300(df, cols, idvar, explanation = TRUE)
+i_standarbot_300(df, cols, idvar, explanation = TRUE, append = TRUE)
 }
 \arguments{
 \item{df}{A dataframe.}
@@ -14,6 +14,8 @@ i_standarbot_300(df, cols, idvar, explanation = TRUE)
 \item{idvar}{Your ID variable. It currently accepts only one.}
 
 \item{explanation}{Boolean to print explanation of the function (default is TRUE).}
+
+\item{append}{Boolean to append new standardized columns to your original dataframe or not (default is TRUE)}
 }
 \value{
 Will return a dataframe with new person-mean standardized columns appended at the end.

@@ -1,10 +1,13 @@
 Package: idionomics
-Title: What the Package Does (One Line, Title Case)
+Title: Conduct Idiographic-Nomothetic Analyses for Psych Science
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+   c(
+    person("Cristóbal", "Hernández", email = "cristobal.ehc@gmail.com", role = "cre"),
+    person("Joseph", "Ciarrochi", email = "ciarrochij@gmail.com", role = "aut"),
+    person("Baljinder", "Sahdra", email = "baljinder.sahdra@acu.edu.au", role = "aut"),
+    person("Steven", "Hayes", email = "stevenchayes@gmail.com", role = "aut"))
+Description: A set of tools to make idionomic analyses easy to compute and reproduce. Provide your data, select your features and it takes care of the rest.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
