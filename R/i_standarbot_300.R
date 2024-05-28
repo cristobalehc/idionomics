@@ -32,7 +32,7 @@ i_standarbot_300 <- function (df, cols, idvar, explanation = TRUE, append = TRUE
   }
 
 
-
+  # Provide explanation, conditional to explanation = TRUE.
   if (explanation == TRUE) {
     cat('This function will create a dataframe with person-mean standardized variables appended at the end',"\n")
     Sys.sleep(0.8)
@@ -60,12 +60,15 @@ i_standarbot_300 <- function (df, cols, idvar, explanation = TRUE, append = TRUE
     dplyr::ungroup() %>%
     dplyr::filter()
 
+
+  # IF append == TRUE, return the original dataframe with new standardized columns appended at the end (right)
   if (append == TRUE) {
 
   cat("\n")
     cat('   Standardization finished: Your original dataframe with standardized columns appended at the end was returned')
   return(df) }
 
+  # IF append == FALSE, return a smaller dataframe only with id and standardized columns.
   else {
     #Paste column names with _PSD
     standardized_cols = paste0(cols, "_PSD")
