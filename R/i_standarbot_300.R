@@ -23,6 +23,16 @@ i_standarbot_300 <- function (df, cols, idvar, explanation = TRUE, append = TRUE
   # If there is no variance, will return 0.
   # Else with return the deviation from the mean.
 
+  # Check if the provided variables are in the dataframe
+  required_vars <- c(cols, idvar)
+
+  if (!all(required_vars %in% colnames(df))) {
+    missing_vars <- required_vars[!required_vars %in% colnames(df)]
+    stop(paste("Cannot find required variables. Check if you spelled the following variables correctly:", paste(missing_vars, collapse = ", ")))
+  }
+
+
+
   if (explanation == TRUE) {
     cat('This function will create a dataframe with person-mean standardized variables appended at the end',"\n")
     Sys.sleep(0.8)
