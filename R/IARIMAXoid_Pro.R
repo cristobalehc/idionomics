@@ -447,7 +447,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
           dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym) %>% #Subset only id variable and x and y series.
           tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
           dplyr::group_by(!!id_var_sym) %>% #group by id.
-          dplyr::summarise(weight_variable_n = n()) #get the count of valid cases.
+          dplyr::summarise(weight_variable_n = dplyr::n()) #get the count of valid cases.
 
         #Merge different weight variable.
         results_df <- merge(results_df, dataframe_count_valid, by = id_var, all.x = TRUE)
@@ -505,7 +505,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
         dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym) %>% #Subset only id variable and x and y series.
         tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
         dplyr::group_by(!!id_var_sym) %>% #group by id.
-        dplyr::summarise(weight_variable_n = n()) #get the count of valid cases.
+        dplyr::summarise(weight_variable_n = dplyr::n()) #get the count of valid cases.
 
       #Merge different weight variable.
       results_df <- merge(results_df, dataframe_count_valid, by = id_var, all.x = TRUE)
@@ -729,8 +729,11 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       colnames(dataframe_rma_weight)[1] <- id_var
       colnames(dataframe_rma_weight)[2] <- "weight_variable"
 
+
+
       #merge results_df
       results_df <- merge(results_df, dataframe_rma_weight, by = id_var, all.x = TRUE)
+
 
       #Run random effects meta analysis.
       #Try to conduct the random effect meta analysis.
@@ -760,7 +763,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
           dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym) %>% #Subset only id variable and x and y series.
           tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
           dplyr::group_by(!!id_var_sym) %>% #group by id.
-          dplyr::summarise(weight_variable_n = n()) #get the count of valid cases.
+          dplyr::summarise(weight_variable_n = dplyr::n()) #get the count of valid cases.
 
         #Merge different weight variable.
         results_df <- merge(results_df, dataframe_count_valid, by = id_var, all.x = TRUE)
@@ -818,7 +821,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
         dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym) %>% #Subset only id variable and x and y series.
         tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
         dplyr::group_by(!!id_var_sym) %>% #group by id.
-        dplyr::summarise(weight_variable_n = n()) #get the count of valid cases.
+        dplyr::summarise(weight_variable_n = dplyr::n()) #get the count of valid cases.
 
       #Merge different weight variable.
       results_df <- merge(results_df, dataframe_count_valid, by = id_var, all.x = TRUE)
@@ -960,4 +963,4 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
 }
 
 
-utils::globalVariables(c("count", "var_y", "var_x")) #Declare symbolic global variables.
+utils::globalVariables(c("count", "var_y", "var_x",'weight_variable','weight_variable_n')) #Declare symbolic global variables.

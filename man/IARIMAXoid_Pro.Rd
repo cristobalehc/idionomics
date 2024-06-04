@@ -13,7 +13,9 @@ IARIMAXoid_Pro(
   id_var,
   metaanalysis = TRUE,
   hlm_compare = FALSE,
-  timevar = NULL
+  timevar = NULL,
+  weight_rma = FALSE,
+  weight_rma_var = NULL
 )
 }
 \arguments{
@@ -34,6 +36,10 @@ IARIMAXoid_Pro(
 \item{hlm_compare}{Optional, to create a comparison with an HLM model, default is FALSE.}
 
 \item{timevar}{If hlm_compare is TRUE, then a time variable is needed, default is NULL.}
+
+\item{weight_rma}{If adding a weight variable to the RMA model.}
+
+\item{weight_rma_var}{Select weight RMA variable. Defaults as NULL, if NULL then the number of valid observations for Y AND X will be used (!is.na).}
 }
 \value{
 A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
