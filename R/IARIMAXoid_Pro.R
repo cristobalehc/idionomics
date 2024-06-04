@@ -12,6 +12,8 @@
 #' @param metaanalysis Bool to run a random effects meta-analysis or not.
 #' @param hlm_compare Optional, to create a comparison with an HLM model, default is FALSE.
 #' @param timevar If hlm_compare is TRUE, then a time variable is needed, default is NULL.
+#' @param weight_rma If adding a weight variable to the RMA model.
+#' @param weight_rma_var Select weight RMA variable. Defaults as NULL, if NULL then the number of valid observations for Y AND X will be used (!is.na).
 #'
 #' @returns A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
 
@@ -21,20 +23,11 @@
 #####################################
 
 IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series, id_var,
-                           metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL) {
+                           metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL, weight_rma = FALSE, weight_rma_var = NULL) {
 
 
-  # dataframe = your dataframe's name.
-  # min_n_subject = The minimum number of non na cases to run the analyses.
-  # minvar = minimum variance to include a case.
-  # y_series = the name of your dependent variable, as string.
-  # y_series = the name of your independent variable, as string.
-  # id_var = the name of your id varible per subject within your dataframe, as string.
-  # metaanalysis = bool to run a random effects meta-analysis or not.
-  # hlm_compare = Provide a comparison with an HLM model.
-  # timevar = time variable for hlm model.
 
-  # Check if the provided variables are in the dataframe
+  # CHeck wether variables are in the in the dataset.
   required_vars <- c(y_series, x_series, id_var)
 
   if (!all(required_vars %in% colnames(dataframe))) {
@@ -51,6 +44,15 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       stop(paste0("The time variable '", timevar, "' was not found in the dataframe. Did you spell it correctly?"))
     }
   }
+
+  if (weight_rma == TRUE & !is.null(weight_rma_var)) {
+
+    if (!(weight_rma_var %in% colnames(dataframe))){
+
+    stop(paste0("The time variable '", weight_rma_var, "' was not found in the dataframe. Did you spell it correctly?"))
+    }
+  }
+
 
   # Convert strings to rlang::symbols
   y_series_sym <- rlang::sym(y_series)
@@ -223,42 +225,42 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     if ('estimate_ar1' %in% colnames(tidymodel)) {
       AR1[[i]] <- tidymodel$estimate_ar1
       stderr_AR1[[i]] <- tidymodel$std.error_ar1
-    }
-    else {
+    }    else {
       AR1[[i]] <- NA
       stderr_AR1[[i]] <- NA
     }
+
 
 
     #Fill AR2 parameters conditionally to their existence.
     if ('estimate_ar2' %in% colnames(tidymodel)) {
       AR2[[i]] <- tidymodel$estimate_ar2
       stderr_AR2[[i]] <- tidymodel$std.error_ar2
-    }
-    else {
+    }    else {
       AR2[[i]] <- NA
       stderr_AR2[[i]] <- NA
     }
+
 
     #Fill AR3 parameters conditionally to their existence.
     if ('estimate_ar3' %in% colnames(tidymodel)) {
       AR3[[i]] <- tidymodel$estimate_ar3
       stderr_AR3[[i]] <- tidymodel$std.error_ar3
-    }
-    else {
+    }    else {
       AR3[[i]] <- NA
       stderr_AR3[[i]] <- NA
     }
+
 
     #Fill AR4 parameters conditionally to their existence.
     if ('estimate_ar4' %in% colnames(tidymodel)) {
       AR4[[i]] <- tidymodel$estimate_ar4
       stderr_AR4[[i]] <- tidymodel$std.error_ar4
-    }
-    else {
+    }     else {
       AR4[[i]] <- NA
       stderr_AR4[[i]] <- NA
     }
+
 
     ##############################
     ###### FIL MA PARAMETERS #####
@@ -268,51 +270,51 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     if ('estimate_ma1' %in% colnames(tidymodel)) {
       MA1[[i]] <- tidymodel$estimate_ma1
       stderr_MA1[[i]] <- tidymodel$std.error_ma1
-    }
-    else {
+    }     else {
       MA1[[i]] <- NA
       stderr_MA1[[i]] <- NA
     }
+
 
     #Fill MA2 parameters conditionally to their existence.
     if ('estimate_ma2' %in% colnames(tidymodel)) {
       MA2[[i]] <- tidymodel$estimate_ma2
       stderr_MA2[[i]] <- tidymodel$std.error_ma2
-    }
-    else {
+    }     else {
       MA2[[i]] <- NA
       stderr_MA2[[i]] <- NA
     }
+
 
     #Fill MA3 parameters conditionally to their existence.
     if ('estimate_ma3' %in% colnames(tidymodel)) {
       MA3[[i]] <- tidymodel$estimate_ma3
       stderr_MA3[[i]] <- tidymodel$std.error_ma3
-    }
-    else {
+    }     else {
       MA3[[i]] <- NA
       stderr_MA3[[i]] <- NA
     }
+
 
     #Fill MA4 parameters conditionally to their existence.
     if ('estimate_ma4' %in% colnames(tidymodel)) {
       MA4[[i]] <- tidymodel$estimate_ma4
       stderr_MA4[[i]] <- tidymodel$std.error_ma4
-    }
-    else {
+    }     else {
       MA4[[i]] <- NA
       stderr_MA4[[i]] <- NA
     }
+
 
     #Fill XREG parameters conditionally to their existence.
     if ('estimate_xreg' %in% colnames(tidymodel)) {
       xreg[[i]] <- tidymodel$estimate_xreg
       stderr_xreg[[i]] <- tidymodel$std.error_xreg
-    }
-    else {
+    }     else {
       xreg[[i]] <- NA
       stderr_xreg[[i]] <- NA
     }
+
 
 
     #Finish the text.
@@ -398,8 +400,187 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     cat(paste('Running random-effects meta analysis & HLM model for comparison',"\n"))
     cat(paste('',"\n"))
 
+    # IF WEIGHT OPTION IS TRUE.
+    if (weight_rma == TRUE & !is.null(weight_rma_var)) {
+
+      weight_rma_var_sym <- rlang::sym(weight_rma_var)
+
+      #Extract first observation of weight variable.
+      dataframe_rma_weight <- dataframe %>%
+        dplyr::select(!!id_var_sym,!!weight_rma_var_sym) %>% #Subset only weight variable and id variable.
+        tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
+        dplyr::group_by(!!id_var_sym) %>% #group by id.
+        dplyr::slice(1L) #Get the first observation.
+
+      #Explicitly set name to merge.
+      colnames(dataframe_rma_weight)[1] <- id_var
+      colnames(dataframe_rma_weight)[2] <- "weight_variable"
+
+      #merge results_df
+      results_df <- merge(results_df, dataframe_rma_weight, by = id_var, all.x = TRUE)
+
+      #Run random effects meta analysis.
+      #Try to conduct the random effect meta analysis.
+      meta_analysis <-
+        tryCatch(
+          {
+            metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg, weights = results_df$weight_variable)
+          },
+          error = function(e) {
+            cat('Error running RME with weight variable:', e$message, '\n','trying with default weight (n of valid observations): \n')
+
+            NULL #Set as null.
+          }
+        )
+      #Print success.
+      if (!is.null(meta_analysis)){
+        cat(paste0(' Random Effects Meta-Analysis Ran correctly with your specified weight variable: ','"',weight_rma_var,'"\n'))
+        ran_rma <- 1 #marker.
+      }
+      #Delete weight variable.
+      results_df <- results_df %>% dplyr::select(-weight_variable)
+      #If RMA doesnt work with the especified weight variable.
+      if (is.null(meta_analysis)){
+
+        #Get number of valid cases.
+        dataframe_count_valid <- dataframe %>%
+          dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym) %>% #Subset only id variable and x and y series.
+          tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
+          dplyr::group_by(!!id_var_sym) %>% #group by id.
+          dplyr::summarise(weight_variable_n = n()) #get the count of valid cases.
+
+        #Merge different weight variable.
+        results_df <- merge(results_df, dataframe_count_valid, by = id_var, all.x = TRUE)
+
+        #Try to run the new meta analysis.
+        meta_analysis <-
+          tryCatch(
+            {
+              metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg, weights = results_df$weight_variable_n)
+            },
+            error = function(e) {
+              cat('Error running RME with default weight (n of valid observations):', e$message, '\n',
+                  'Setting weight_rma = FALSE: \n')
+              NULL
+            }
+          )
+        #Print success.
+        if (!is.null(meta_analysis)){
+          cat(' Random Effects Meta-Analysis Ran correctly with the default weight variable (n valid cases)')
+        }
+
+        results_df <- results_df %>% dplyr::select(-weight_variable_n)
+
+
+      }
+      #If meta analysis is still null: Just conduct it normally.
+      if (is.null(meta_analysis)){
+        #Run random effects meta analysis.
+        #Try to conduct the random effect meta analysis.
+        meta_analysis <-
+          tryCatch(
+            {
+              metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg)
+            },
+            error = function(e) {
+              cat('Error running RME:', e$message, '\n')
+              NULL
+            }
+          )
+
+        #Print success.
+        if (!is.null(meta_analysis)){
+          cat(' Random Effects Meta-Analysis Ran correctly without exogenous weights')
+        }
+
+      }
+
+      #If weight RMA equals TRUE, but weight_rma_var is NULL.
+    }  else if (weight_rma == TRUE & is.null(weight_rma_var)){
+
+
+
+      #Get number of valid cases.
+      dataframe_count_valid <- dataframe %>%
+        dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym) %>% #Subset only id variable and x and y series.
+        tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
+        dplyr::group_by(!!id_var_sym) %>% #group by id.
+        dplyr::summarise(weight_variable_n = n()) #get the count of valid cases.
+
+      #Merge different weight variable.
+      results_df <- merge(results_df, dataframe_count_valid, by = id_var, all.x = TRUE)
+
+      #Try to run the new meta analysis.
+      meta_analysis <-
+        tryCatch(
+          {
+            metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg, weights = results_df$weight_variable_n)
+          },
+          error = function(e) {
+            cat('Error running RME with default weight (n of valid observations):', e$message, '\n',
+                'Setting weight_rma = FALSE: \n')
+            NULL
+          }
+        )
+      if (!is.null(meta_analysis)){
+        cat(' Random Effects Meta-Analysis Ran correctly with the default weight variable (n valid cases)')
+      }
+
+
+      #Delete weight variable.
+      results_df <- results_df %>% dplyr::select(-weight_variable_n)
+
+      #If meta analysis is still null: Just conduct it normally.
+      if (is.null(meta_analysis)){
+        #Run random effects meta analysis.
+        #Try to conduct the random effect meta analysis.
+        meta_analysis <-
+          tryCatch(
+            {
+              metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg)
+            },
+            error = function(e) {
+              cat('Error running RME:', e$message, '\n')
+              NULL
+            }
+          )
+        if (!is.null(meta_analysis)){
+          cat(' Random Effects Meta-Analysis Ran correctly without exogenous weights')
+        }
+      }
+
+      #If weights_rma = FALSE.
+    }   else {
+
+
+
     #Run random effects meta analysis.
-    meta_analysis <- metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg)
+      #Try to conduct the random effect meta analysis.
+    meta_analysis <-
+      tryCatch(
+        {
+      metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg)
+        },
+      error = function(e) {
+        cat('Error running RME:', e$message, '\n')
+        NULL
+      }
+      )
+    if (!is.null(meta_analysis)){
+      cat(' Random Effects Meta-Analysis Ran correctly without exogenous weights')
+    }
+    }
+
+    ### LAST CHECK FOR RANDOM META ANALYSIS ###
+
+    #If meta analysis is null: Stop and return early.
+    if (is.null(meta_analysis)) {
+      cat('Skipping RME and HLM model due to error in RME. Returning metaanalysis = FALSE model. \n')
+      return(list(results_df = results_df, error_arimax_skipped = exclude))
+      #If meta analysis worked (not null): Continue with the rest of the calculations (HLM in this case.)
+    }
+    else {
+
 
     Sys.sleep(2)
     cat(paste('',"\n"))
@@ -408,6 +589,9 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     cat(paste0('            2. SUMMARY OF RANDOM EFFECTS META ANALYSIS',"\n"))
     print(summary(meta_analysis))
 
+    ##########################
+    ##### RUN HLM MODEL #####
+    ########################
 
     #Filter dataframe to be consistent with I-ARIMAX data.
     dataframehlm <- dataframe %>%
@@ -438,10 +622,12 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     if (is.null(hlm_model)){
       cat('Skipping HLM model calculations due to error. Returning hlm_model = FALSE model. \n')
       return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude))
+      #If hlm model is not null, then do the rest of the calculations.
     }
-
-    #If hlm model is not null, then do the rest of the calculations.
     else {
+
+
+
       # Create dataframe with random effects.
       df_rand <- as.data.frame(hlm_model$coefficients$random) #Create dataframe
       df_rand <- tibble::rownames_to_column(df_rand) #Add rowname as column
@@ -514,21 +700,202 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
 
       #Return values.
       return(list(results_df = results_df,meta_analysis = meta_analysis, hlm_mod = hlm_model, rand_df = df_rand, comparison = iarimaxtohlm, error_arimax_skipped = exclude))
+     }
     }
-  }
 
-  #Run just the meta analysis.
+  }
+  #Run just the meta analysis (This should work only if meta analysis was not null, if null it stopped before)
   else if (metaanalysis == TRUE & hlm_compare == FALSE){
+
 
     Sys.sleep(0.8)
     cat(paste('',"\n"))
     cat(paste('Running random-effects meta analysis.',"\n"))
     cat(paste('',"\n"))
 
-    meta_analysis <- metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg)
+    # IF WEIGHT OPTION IS TRUE.
+    if (weight_rma == TRUE & !is.null(weight_rma_var)) {
 
-    Sys.sleep(0.8)
-    cat(paste('',"\n"))
+      weight_rma_var_sym <- rlang::sym(weight_rma_var)
+
+      #Extract first observation of weight variable.
+      dataframe_rma_weight <- dataframe %>%
+        dplyr::select(!!id_var_sym,!!weight_rma_var_sym) %>% #Subset only weight variable and id variable.
+        tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
+        dplyr::group_by(!!id_var_sym) %>% #group by id.
+        dplyr::slice(1L) #Get the first observation.
+
+      #Explicitly set name to merge.
+      colnames(dataframe_rma_weight)[1] <- id_var
+      colnames(dataframe_rma_weight)[2] <- "weight_variable"
+
+      #merge results_df
+      results_df <- merge(results_df, dataframe_rma_weight, by = id_var, all.x = TRUE)
+
+      #Run random effects meta analysis.
+      #Try to conduct the random effect meta analysis.
+      meta_analysis <-
+        tryCatch(
+          {
+            metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg, weights = results_df$weight_variable)
+          },
+          error = function(e) {
+            cat('Error running RME with weight variable:', e$message, '\n','trying with default weight (n of valid observations): \n')
+
+            NULL #Set as null.
+          }
+        )
+      #Print success.
+      if (!is.null(meta_analysis)){
+        cat(paste0(' Random Effects Meta-Analysis Ran correctly with your specified weight variable: ','"',weight_rma_var,'"\n'))
+        ran_rma <- 1 #marker.
+      }
+      #Delete weight variable.
+      results_df <- results_df %>% dplyr::select(-weight_variable)
+      #If RMA doesnt work with the especified weight variable.
+      if (is.null(meta_analysis)){
+
+        #Get number of valid cases.
+        dataframe_count_valid <- dataframe %>%
+          dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym) %>% #Subset only id variable and x and y series.
+          tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
+          dplyr::group_by(!!id_var_sym) %>% #group by id.
+          dplyr::summarise(weight_variable_n = n()) #get the count of valid cases.
+
+        #Merge different weight variable.
+        results_df <- merge(results_df, dataframe_count_valid, by = id_var, all.x = TRUE)
+
+        #Try to run the new meta analysis.
+        meta_analysis <-
+          tryCatch(
+            {
+              metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg, weights = results_df$weight_variable_n)
+            },
+            error = function(e) {
+              cat('Error running RME with default weight (n of valid observations):', e$message, '\n',
+                  'Setting weight_rma = FALSE: \n')
+              NULL
+            }
+          )
+        #Print success.
+        if (!is.null(meta_analysis)){
+          cat(' Random Effects Meta-Analysis Ran correctly with the default weight variable (n valid cases)')
+        }
+
+        results_df <- results_df %>% dplyr::select(-weight_variable_n)
+
+
+      }
+      #If meta analysis is still null: Just conduct it normally.
+      if (is.null(meta_analysis)){
+        #Run random effects meta analysis.
+        #Try to conduct the random effect meta analysis.
+        meta_analysis <-
+          tryCatch(
+            {
+              metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg)
+            },
+            error = function(e) {
+              cat('Error running RME:', e$message, '\n')
+              NULL
+            }
+          )
+
+        #Print success.
+        if (!is.null(meta_analysis)){
+          cat(' Random Effects Meta-Analysis Ran correctly without exogenous weights')
+        }
+
+      }
+
+      #If weight RMA equals TRUE, but weight_rma_var is NULL.
+    }  else if (weight_rma == TRUE & is.null(weight_rma_var)){
+
+
+
+      #Get number of valid cases.
+      dataframe_count_valid <- dataframe %>%
+        dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym) %>% #Subset only id variable and x and y series.
+        tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
+        dplyr::group_by(!!id_var_sym) %>% #group by id.
+        dplyr::summarise(weight_variable_n = n()) #get the count of valid cases.
+
+      #Merge different weight variable.
+      results_df <- merge(results_df, dataframe_count_valid, by = id_var, all.x = TRUE)
+
+      #Try to run the new meta analysis.
+      meta_analysis <-
+        tryCatch(
+          {
+            metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg, weights = results_df$weight_variable_n)
+          },
+          error = function(e) {
+            cat('Error running RME with default weight (n of valid observations):', e$message, '\n',
+                'Setting weight_rma = FALSE: \n')
+            NULL
+          }
+        )
+      if (!is.null(meta_analysis)){
+        cat(' Random Effects Meta-Analysis Ran correctly with the default weight variable (n valid cases)')
+      }
+
+
+      #Delete weight variable.
+      results_df <- results_df %>% dplyr::select(-weight_variable_n)
+
+      #If meta analysis is still null: Just conduct it normally.
+      if (is.null(meta_analysis)){
+        #Run random effects meta analysis.
+        #Try to conduct the random effect meta analysis.
+        meta_analysis <-
+          tryCatch(
+            {
+              metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg)
+            },
+            error = function(e) {
+              cat('Error running RME:', e$message, '\n')
+              NULL
+            }
+          )
+        if (!is.null(meta_analysis)){
+          cat(' Random Effects Meta-Analysis Ran correctly without exogenous weights')
+        }
+      }
+
+      #If weights_rma = FALSE.
+    }   else {
+
+
+
+      #Run random effects meta analysis.
+      #Try to conduct the random effect meta analysis.
+      meta_analysis <-
+        tryCatch(
+          {
+            metafor::rma(yi = results_df$xreg, sei = results_df$stderr_xreg)
+          },
+          error = function(e) {
+            cat('Error running RME:', e$message, '\n')
+            NULL
+          }
+        )
+      if (!is.null(meta_analysis)){
+        cat(' Random Effects Meta-Analysis Ran correctly without exogenous weights')
+      }
+    }
+    #####################################
+    #LAST CHECK OF RANDOM META ANALYSIS#
+    ###################################
+    #If meta analysis is null: Stop and return early.
+    if (is.null(meta_analysis)) {
+      cat('Skipping RME due to error. Returning metaanalysis = FALSE model. \n')
+      return(list(results_df = results_df, error_arimax_skipped = exclude))
+
+    }
+    else {
+
+      Sys.sleep(0.8)
+      cat(paste('',"\n"))
 
 
     cat(paste0('',"\n",
@@ -557,8 +924,10 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
 
     return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude))
 
+    }
   }
   else {
+
 
     Sys.sleep(0.8)
     cat(paste('',"\n"))
@@ -587,6 +956,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     return(list(results_df = results_df, error_arimax_skipped = exclude))
 
   }
+
 }
+
 
 utils::globalVariables(c("count", "var_y", "var_x")) #Declare symbolic global variables.
