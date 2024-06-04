@@ -49,7 +49,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
 
     if (!(weight_rma_var %in% colnames(dataframe))){
 
-    stop(paste0("The time variable '", weight_rma_var, "' was not found in the dataframe. Did you spell it correctly?"))
+    stop(paste0("The weight variable for RMA '", weight_rma_var, "' was not found in the dataframe. Did you spell it correctly?"))
     }
   }
 
