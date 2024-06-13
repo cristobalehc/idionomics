@@ -121,6 +121,9 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   xreg <- list()
   stderr_xreg <- list()
 
+  #Number of valid cases.
+  n_valid <- list()
+
   #Exclude cases where arimax don't work.
   exclude <- list()
 
@@ -165,6 +168,9 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       dplyr::filter(!!id_var_sym == i) %>%
       dplyr::pull(!!x_series_sym) #Should I add NA omit? I think so...
 
+    #Count number of valid observations.
+    n_valid_val <- sum(!is.na(y_vector) & !is.na(x_vector))
+
 
     #Run model and catch errors: TryCatch will do that.
     model <- tryCatch(
@@ -201,6 +207,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       stderr_MA4[[i]] <- NA
       xreg[[i]] <- NA
       stderr_xreg[[i]] <- NA
+      n_valid[[i]] <- NA
       exclude[[i]] <- i
       cat("\n","   Skipping case due to error: ")
       cat("        ... ",round((casen/(length(names))*100),digits = 1),'% completed',"\n","\n") #Keep printing advance percentage.
@@ -315,7 +322,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       stderr_xreg[[i]] <- NA
     }
 
-
+    #Add number of valid cases.
+    n_valid[[i]] <- n_valid_val
 
     #Finish the text.
     cat(round((casen/(length(names))*100),digits = 1),'% completed',"\n")
@@ -348,6 +356,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   stderr_MA4_vector <- unlist(stderr_MA4)
   xreg_vector <- unlist(xreg)
   stderr_xreg_vector <- unlist(stderr_xreg)
+  n_valid_vector <- unlist(n_valid)
 
 
   # Combine into a data frame
@@ -373,7 +382,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     MA4 = MA4_vector,
     stderr_MA4 = stderr_MA4_vector,
     xreg = xreg_vector,
-    stderr_xreg = stderr_xreg_vector)
+    stderr_xreg = stderr_xreg_vector,
+    n_valid = n_valid_vector)
 
   #Set id variable, as id_var for consistency.
   colnames(results_df)[1] <- id_var
