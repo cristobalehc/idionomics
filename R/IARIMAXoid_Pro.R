@@ -121,8 +121,9 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   xreg <- list()
   stderr_xreg <- list()
 
-  #Number of valid cases.
+  #Number of valid cases & parameters.
   n_valid <- list()
+  n_params <- list()
 
   #Exclude cases where arimax don't work.
   exclude <- list()
@@ -208,6 +209,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       xreg[[i]] <- NA
       stderr_xreg[[i]] <- NA
       n_valid[[i]] <- NA
+      n_params[[i]] <- NA
       exclude[[i]] <- i
       cat("\n","   Skipping case due to error: ")
       cat("        ... ",round((casen/(length(names))*100),digits = 1),'% completed',"\n","\n") #Keep printing advance percentage.
@@ -324,6 +326,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
 
     #Add number of valid cases.
     n_valid[[i]] <- n_valid_val
+    n_params[[i]] <- length(model$coef)
 
     #Finish the text.
     cat(round((casen/(length(names))*100),digits = 1),'% completed',"\n")
@@ -357,7 +360,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   xreg_vector <- unlist(xreg)
   stderr_xreg_vector <- unlist(stderr_xreg)
   n_valid_vector <- unlist(n_valid)
-
+  n_params_vector <- unlist(n_params)
 
   # Combine into a data frame
   results_df <- data.frame(
@@ -383,7 +386,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     stderr_MA4 = stderr_MA4_vector,
     xreg = xreg_vector,
     stderr_xreg = stderr_xreg_vector,
-    n_valid = n_valid_vector)
+    n_valid = n_valid_vector,
+    n_params = n_params_vector)
 
   #Set id variable, as id_var for consistency.
   colnames(results_df)[1] <- id_var

@@ -17,7 +17,9 @@ BugReports: https://github.com/cristobalehc/idionomics/issues
 Imports: 
     broom,
     dplyr,
+    forcats,
     forecast,
+    ggplot2,
     longitudinalData,
     metafor,
     nlme,
@@ -25,4 +27,3 @@ Imports:
     tibble,
     tidyr,
     utils
-
