@@ -14,6 +14,7 @@
 #' @param timevar If hlm_compare is TRUE, then a time variable is needed, default is NULL.
 #' @param weight_rma If adding a weight variable to the RMA model.
 #' @param weight_rma_var Select weight RMA variable. Defaults as NULL, if NULL then the number of valid observations for Y AND X will be used (!is.na).
+#' @param correlation_method Select correlation method from 'spearman', 'pearson' or 'kendall'. Defaults to 'spearman'.
 #'
 #' @returns A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
 
@@ -23,7 +24,7 @@
 #####################################
 
 IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series, id_var,
-                           metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL, weight_rma = FALSE, weight_rma_var = NULL) {
+                           metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL, weight_rma = FALSE, weight_rma_var = NULL, correlation_method = 'spearman') {
 
 
 
@@ -121,12 +122,19 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   xreg <- list()
   stderr_xreg <- list()
 
+  #Drift.
+  drift <- list()
+  stderr_drift <- list()
+
   #Number of valid cases & parameters.
   n_valid <- list()
   n_params <- list()
 
   #Exclude cases where arimax don't work.
   exclude <- list()
+
+  #Correlations.
+  raw_correlation <- list()
 
   # Run auto.arima per case
   cat(paste('',"\n"))
@@ -172,6 +180,23 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     #Count number of valid observations.
     n_valid_val <- sum(!is.na(y_vector) & !is.na(x_vector))
 
+    options(warn = -1) #Supress spearman's warning about p-values with ties.
+    correlation <- tryCatch(
+      {
+        stats::cor.test(x = x_vector, y = y_vector, method = correlation_method)
+      },
+      error = function(e) {
+        cat("\n","\n",' Error computing correlation for case: ',as.character(i), "\n","  ",e$message,"\n")
+        NULL #Set model as NULL
+      }
+    )
+    options(warn = 0) #Go back to origin.
+
+    #Handle when correlations are null.
+    if (is.null(correlation)) {
+      raw_correlation[[i]] <- NA
+    }
+
 
     #Run model and catch errors: TryCatch will do that.
     model <- tryCatch(
@@ -208,6 +233,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       stderr_MA4[[i]] <- NA
       xreg[[i]] <- NA
       stderr_xreg[[i]] <- NA
+      drift[[i]] <- NA
+      stderr_drift[[i]] <- NA
       n_valid[[i]] <- NA
       n_params[[i]] <- NA
       exclude[[i]] <- i
@@ -314,6 +341,9 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       stderr_MA4[[i]] <- NA
     }
 
+    #########################################
+    ##### FILL Xreg & Drift Parameters #####
+    #######################################
 
     #Fill XREG parameters conditionally to their existence.
     if ('estimate_xreg' %in% colnames(tidymodel)) {
@@ -324,9 +354,23 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       stderr_xreg[[i]] <- NA
     }
 
+    #Fill drift parameters conditionally to their existence.
+    if ('estimate_drift' %in% colnames(tidymodel)) {
+      drift[[i]] <- tidymodel$estimate_drift
+      stderr_drift[[i]] <- tidymodel$std.error_drift
+    }     else {
+      drift[[i]] <- NA
+      stderr_drift[[i]] <- NA
+    }
+
     #Add number of valid cases.
     n_valid[[i]] <- n_valid_val
     n_params[[i]] <- length(model$coef)
+
+    #Fill raw correlation if not null.
+    if (!is.null(correlation)) {
+      raw_correlation[[i]] <- correlation$estimate[[1]]
+    }
 
     #Finish the text.
     cat(round((casen/(length(names))*100),digits = 1),'% completed',"\n")
@@ -359,8 +403,11 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   stderr_MA4_vector <- unlist(stderr_MA4)
   xreg_vector <- unlist(xreg)
   stderr_xreg_vector <- unlist(stderr_xreg)
+  drift_vector <- unlist(drift)
+  stderr_drift_vector <- unlist(stderr_drift)
   n_valid_vector <- unlist(n_valid)
   n_params_vector <- unlist(n_params)
+  raw_correlation_vector <- unlist(raw_correlation)
 
   # Combine into a data frame
   results_df <- data.frame(
@@ -384,10 +431,13 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     stderr_MA3 = stderr_MA3_vector,
     MA4 = MA4_vector,
     stderr_MA4 = stderr_MA4_vector,
+    drift = drift_vector,
+    stderr_drift  = stderr_drift_vector,
     xreg = xreg_vector,
     stderr_xreg = stderr_xreg_vector,
     n_valid = n_valid_vector,
-    n_params = n_params_vector)
+    n_params = n_params_vector,
+    raw_correlation = raw_correlation_vector)
 
   #Set id variable, as id_var for consistency.
   colnames(results_df)[1] <- id_var

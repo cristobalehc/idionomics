@@ -15,7 +15,8 @@ IARIMAXoid_Pro(
   hlm_compare = FALSE,
   timevar = NULL,
   weight_rma = FALSE,
-  weight_rma_var = NULL
+  weight_rma_var = NULL,
+  correlation_method = "spearman"
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ IARIMAXoid_Pro(
 \item{weight_rma}{If adding a weight variable to the RMA model.}
 
 \item{weight_rma_var}{Select weight RMA variable. Defaults as NULL, if NULL then the number of valid observations for Y AND X will be used (!is.na).}
+
+\item{correlation_method}{Select correlation method from 'spearman', 'pearson' or 'kendall'. Defaults to 'spearman'.}
 }
 \value{
 A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
