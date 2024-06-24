@@ -147,7 +147,7 @@ Plotomatron <- function(dataframe,id_var ,y_series_name = NULL, x_series_name = 
       ggplot2::xlab(ifelse(is.null(y_series_name) | is.null(x_series_name),"Effect Size of the Link Between \n X series and Y series in Daily Life",
                   paste0("Effect Size of the Link Between \n",x_series_name, " and ",y_series_name, " in Daily Life"))) +
       ggplot2::scale_x_continuous(
-        breaks = seq(-1.0, 1.0, by = 0.20),  # X axis breaks.
+        breaks = seq(lims[1], lims[2], by = 0.20),  # X axis breaks.
         limits = lims  # Set x-axis limits
       ) +
       ggplot2::theme_bw()
