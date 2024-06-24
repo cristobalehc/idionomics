@@ -10,7 +10,8 @@ Plotomatron(
   y_series_name = NULL,
   x_series_name = NULL,
   alpha_crit_t = 0.05,
-  plot_type = "caterpillar"
+  plot_type = "caterpillar",
+  lims = c(-1, 1)
 )
 }
 \arguments{
@@ -24,7 +25,9 @@ Plotomatron(
 
 \item{alpha_crit_t}{Critical value for model significance. Defaluts to 0.05.}
 
-\item{plot_type}{Plot type. Currently supported: "caterpillar".}
+\item{plot_type}{Plot type. Supports 'caterpillar','ecdf', and 'density'. Defaults to 'caterpillar'.}
+
+\item{lims}{a vector of length 2 with limits for the density plot. Defaults to c(-1,1)}
 }
 \value{
 A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
