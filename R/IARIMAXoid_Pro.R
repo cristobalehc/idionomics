@@ -14,7 +14,7 @@
 #' @param timevar If hlm_compare is TRUE, then a time variable is needed, default is NULL.
 #' @param weight_rma If adding a weight variable to the RMA model.
 #' @param weight_rma_var Select weight RMA variable. Defaults as NULL, if NULL then the number of valid observations for Y AND X will be used (!is.na).
-#' @param correlation_method Select correlation method from 'spearman', 'pearson' or 'kendall'. Defaults to 'spearman'.
+#' @param correlation_method Select method fr raw correlations. Options are: 'spearman', 'pearson' or 'kendall'. Defaults to 'pearson'.
 #'
 #' @returns A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
 
@@ -24,7 +24,7 @@
 #####################################
 
 IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series, id_var,
-                           metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL, weight_rma = FALSE, weight_rma_var = NULL, correlation_method = 'spearman') {
+                           metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL, weight_rma = FALSE, weight_rma_var = NULL, correlation_method = 'pearson') {
 
 
 
@@ -705,12 +705,15 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       hlmse <- sqrt(hlm_model$varFix[9]) #Extract the se, for the fixed effect of x_series, the order depends on the formula.
       iarimaxmean <- mean(results_df$xreg, na.rm = TRUE) #Calculate mean of individual xregs.
       iarimaxvar <- stats::var(results_df$xreg, na.rm = TRUE) #Calculate variance of individual xregs.
+      corrmean <- mean(results_df$raw_correlation, na.rm = TRUE) #Calculate mean of raw correlations.
+      corrvar <- stats::var(results_df$raw_correlation, na.rm = TRUE) #Calculate variance of raw correlations.
       hlmmean <- mean(df_rand$random_slope, na.rm = TRUE) #Calculate mean of random slopes.
       hlmvar <- stats::var(df_rand$random_slope, na.rm = TRUE) #Calculate variance of random slopes.
 
       #Opposite cases.
       num_oppcase_iarimax <- ifelse(meta_analysis$b[1] > 0,sum(results_df$xreg <0, na.rm = TRUE),sum(results_df$xreg > 0, na.rm = TRUE))
       num_oppcase_hlm <- ifelse(hlm_model$coefficients$fixed[[3]] > 0,sum(df_rand$random_slope <0, na.rm = TRUE),sum(df_rand$random_slope > 0, na.rm = TRUE))
+      num_oppcase_corr <- ifelse(meta_analysis$b[1] > 0,sum(results_df$raw_correlation <0, na.rm = TRUE),sum(results_df$raw_correlation > 0, na.rm = TRUE))
 
       iarimaxtohlm <- list(IarimaxEstimate = iarimaxest,
                            IarimaxSE = iarimaxse,
@@ -720,8 +723,11 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
                            IarimaxVariance = iarimaxvar,
                            HLMMean = hlmmean,
                            HLMVariance = hlmvar,
+                           Corrmean = corrmean,
+                           Corrvar = corrvar,
                            OppositesIarimax = num_oppcase_iarimax,
-                           OppositesHLM = num_oppcase_hlm)
+                           OppositesHLM = num_oppcase_hlm,
+                           OppositesCorr = num_oppcase_corr)
       Sys.sleep(2)
       #Print Summary.
       cat(paste('',"\n"))
@@ -740,13 +746,18 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
                  '   SUMMARY OF INDIVIDUAL EFFECTS',"\n",
                  "\n",
                  '    AVERAGES:',"\n",
+                 '                            MEAN:',"\n",
                  '     * IARIMAX mean effect:                       ',round(iarimaxmean,4),"\n",
                  '     * HLM mean effect:                           ',round(hlmmean,4),"\n",
+                 '     * Raw corr mean effect:                      ',round(corrmean,4),"\n",
+                 '                          VARIANCE:',"\n",
                  '     * IARIMAX variance of individual effects:    ',round(iarimaxvar,4),"\n",
                  '     * HLM variance of random effects:            ',round(hlmvar,4),"\n",
+                 '     * Raw corr variance:                         ',round(corrvar,4),"\n","\n",
                  '    OPPOSITES:',"\n",
                  '     * IARIMAX N cases with opposite direction:   ',round(num_oppcase_iarimax,4),"\n",
-                 '     * HLM N cases with opposite direction:       ',round(num_oppcase_hlm,4)))
+                 '     * HLM N cases with opposite direction:       ',round(num_oppcase_hlm,4),"\n",
+                 '     * Corr N cases with opposite direction:      ',round(num_oppcase_corr,4)))
 
 
       Sys.sleep(1.2)
