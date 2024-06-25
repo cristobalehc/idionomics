@@ -674,13 +674,34 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     hlm_model <- tryCatch(
       {
         nlme::lme(fixed = fixed_formula, random = random_formula,
-                  data = dataframehlm, na.action = stats::na.omit)
+                  data = dataframehlm, na.action = stats::na.omit, correlation = nlme::corAR1(),
+                  control = nlme::lmeControl(opt="optim", msMaxIter = 500, niterEM=100, msMaxEval = 500, returnObject = TRUE, tolerance = 1e-06))
       },
       error = function(e) {
         cat('Error running HLM model:', e$message, "\n")
         NULL # Set hlm_model as NULL in case of error
       }
     )
+
+    #Stop early if hlm model had an error.
+    if (is.null (hlm_model)){
+      # Simplify fixed effects, take away time var.
+      fixed_formula <- stats::as.formula(paste(y_series, "~", x_series))
+      cat('Simplifying HLM model, deleting time variable from fixed effects',"\n")
+      #Run the model again.
+      hlm_model <- tryCatch(
+        {
+          nlme::lme(fixed = fixed_formula, random = random_formula,
+                    data = dataframehlm, na.action = stats::na.omit, correlation = nlme::corAR1(),
+                    control = nlme::lmeControl(opt="optim", msMaxIter = 500, niterEM=100, msMaxEval = 500, returnObject = TRUE, tolerance = 1e-06))
+        },
+        error = function(e) {
+          cat('Error running simplified hlm model:', e$message, "\n")
+          NULL # Set hlm_model as NULL in case of error
+        }
+      )
+
+    }
 
     #Stop early if hlm model had an error.
     if (is.null(hlm_model)){
