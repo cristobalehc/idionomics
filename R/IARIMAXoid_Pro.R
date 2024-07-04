@@ -12,7 +12,7 @@
 #' @param metaanalysis Bool to run a random effects meta-analysis or not.
 #' @param hlm_compare Optional, to create a comparison with an HLM model, default is FALSE.
 #' @param timevar If hlm_compare is TRUE, then a time variable is needed, default is NULL.
-#' @param weight_rma If adding a weight variable to the RMA model.
+#' @param weight_rma If adding an exogenous weight variable to the RMA model.
 #' @param weight_rma_var Select weight RMA variable. Defaults as NULL, if NULL then the number of valid observations for Y AND X will be used (!is.na).
 #' @param correlation_method Select method fr raw correlations. Options are: 'spearman', 'pearson' or 'kendall'. Defaults to 'pearson'.
 #'
