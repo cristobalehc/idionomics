@@ -106,6 +106,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   stderr_AR3 <- list()
   AR4 <- list()
   stderr_AR4 <- list()
+  AR5 <- list()
+  stderr_AR5 <- list()
 
   #MAs
   MA1 <- list()
@@ -116,7 +118,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   stderr_MA3 <- list()
   MA4 <- list()
   stderr_MA4 <- list()
-
+  MA5 <- list()
+  stderr_MA5 <- list()
 
   #Xreg.
   xreg <- list()
@@ -125,6 +128,10 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   #Drift.
   drift <- list()
   stderr_drift <- list()
+
+  #Intercept.
+  intercept <- list()
+  stderr_intercept <- list()
 
   #Number of valid cases & parameters.
   n_valid <- list()
@@ -223,6 +230,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       stderr_AR3[[i]] <- NA
       AR4[[i]] <- NA
       stderr_AR4[[i]] <- NA
+      AR5[[i]] <- NA
+      stderr_AR5[[i]] <- NA
       MA1[[i]] <- NA
       stderr_MA1[[i]] <- NA
       MA2[[i]] <- NA
@@ -231,10 +240,15 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       stderr_MA3[[i]] <- NA
       MA4[[i]] <- NA
       stderr_MA4[[i]] <- NA
+      MA5[[i]] <- NA
+      stderr_MA5[[i]] <- NA
       xreg[[i]] <- NA
       stderr_xreg[[i]] <- NA
       drift[[i]] <- NA
       stderr_drift[[i]] <- NA
+      intercept[[i]] <- NA
+      stderr_intercept[[i]] <- NA
+
       n_valid[[i]] <- NA
       n_params[[i]] <- NA
       exclude[[i]] <- i
@@ -297,6 +311,15 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       stderr_AR4[[i]] <- NA
     }
 
+    #Fill AR5 parameters conditionally to their existence.
+    if ('estimate_ar5' %in% colnames(tidymodel)) {
+      AR5[[i]] <- tidymodel$estimate_ar5
+      stderr_AR5[[i]] <- tidymodel$std.error_ar5
+    }     else {
+      AR5[[i]] <- NA
+      stderr_AR5[[i]] <- NA
+    }
+
 
     ##############################
     ###### FIL MA PARAMETERS #####
@@ -341,9 +364,18 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       stderr_MA4[[i]] <- NA
     }
 
-    #########################################
-    ##### FILL Xreg & Drift Parameters #####
-    #######################################
+    #Fill MA4 parameters conditionally to their existence.
+    if ('estimate_ma5' %in% colnames(tidymodel)) {
+      MA5[[i]] <- tidymodel$estimate_ma5
+      stderr_MA5[[i]] <- tidymodel$std.error_ma5
+    }     else {
+      MA5[[i]] <- NA
+      stderr_MA5[[i]] <- NA
+    }
+
+    #####################################################
+    ##### FILL Xreg, Intercept &  Drift Parameters #####
+    ###################################################
 
     #Fill XREG parameters conditionally to their existence.
     if ('estimate_xreg' %in% colnames(tidymodel)) {
@@ -361,6 +393,15 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     }     else {
       drift[[i]] <- NA
       stderr_drift[[i]] <- NA
+    }
+
+    #Fill intercept parameters conditionally to their existence.
+    if ('estimate_intercept' %in% colnames(tidymodel)) {
+      intercept[[i]] <- tidymodel$estimate_intercept
+      stderr_intercept[[i]] <- tidymodel$std.error_intercept
+    }     else {
+      intercept[[i]] <- NA
+      stderr_intercept[[i]] <- NA
     }
 
     #Add number of valid cases.
@@ -393,6 +434,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   stderr_AR3_vector <- unlist(stderr_AR3)
   AR4_vector <- unlist(AR4)
   stderr_AR4_vector <- unlist(stderr_AR4)
+  AR5_vector <- unlist(AR5)
+  stderr_AR5_vector <- unlist(stderr_AR5)
   MA1_vector <- unlist(MA1)
   stderr_MA1_vector <- unlist(stderr_MA1)
   MA2_vector <- unlist(MA2)
@@ -401,10 +444,14 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
   stderr_MA3_vector <- unlist(stderr_MA3)
   MA4_vector <- unlist(MA4)
   stderr_MA4_vector <- unlist(stderr_MA4)
+  MA5_vector <- unlist(MA5)
+  stderr_MA5_vector <- unlist(stderr_MA5)
   xreg_vector <- unlist(xreg)
   stderr_xreg_vector <- unlist(stderr_xreg)
   drift_vector <- unlist(drift)
   stderr_drift_vector <- unlist(stderr_drift)
+  intercept_vector <- unlist(intercept)
+  stderr_intercept_vector <- unlist(stderr_intercept)
   n_valid_vector <- unlist(n_valid)
   n_params_vector <- unlist(n_params)
   raw_correlation_vector <- unlist(raw_correlation)
@@ -415,6 +462,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     nAR = AR_vector,
     nI = I_vector,
     nMA = MA_vector,
+    intercept = intercept_vector,
     AR1 = AR1_vector,
     stderr_AR1 = stderr_AR1_vector,
     AR2 = AR2_vector,
@@ -423,6 +471,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     stderr_AR3 = stderr_AR3_vector,
     AR4 = AR4_vector,
     stderr_AR4 = stderr_AR4_vector,
+    AR5 = AR5_vector,
+    stderr_AR5 = stderr_AR5_vector,
     MA1 = MA1_vector,
     stderr_MA1 = stderr_MA1_vector,
     MA2 = MA2_vector,
@@ -431,6 +481,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     stderr_MA3 = stderr_MA3_vector,
     MA4 = MA4_vector,
     stderr_MA4 = stderr_MA4_vector,
+    MA5 = MA5_vector,
+    stderr_MA5 = stderr_MA5_vector,
     drift = drift_vector,
     stderr_drift  = stderr_drift_vector,
     xreg = xreg_vector,

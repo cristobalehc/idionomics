@@ -34,7 +34,7 @@ i_standarbot_300 <- function (df, cols, idvar, explanation = TRUE, append = TRUE
 
   # Provide explanation, conditional to explanation = TRUE.
   if (explanation == TRUE) {
-    cat('This function will create a dataframe with person-mean standardized variables appended at the end',"\n")
+    cat('This function will create a dataframe with person-mean standardized variables',"\n")
     Sys.sleep(0.8)
     cat('.')
     Sys.sleep(0.4)
