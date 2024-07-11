@@ -692,7 +692,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     #If meta analysis is null: Stop and return early.
     if (is.null(meta_analysis)) {
       cat('Skipping RME and HLM model due to error in RME. Returning metaanalysis = FALSE model. \n')
-      return(list(results_df = results_df, error_arimax_skipped = exclude))
+      return(list(results_df = results_df, error_arimax_skipped = exclude, type = 'contemporaneous_predictor'))
       #If meta analysis worked (not null): Continue with the rest of the calculations (HLM in this case.)
     }
     else {
@@ -758,7 +758,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     #Stop early if hlm model had an error.
     if (is.null(hlm_model)){
       cat('Skipping HLM model calculations due to error. Returning hlm_model = FALSE model. \n')
-      return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude))
+      return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude, type = 'contemporaneous_predictor'))
       #If hlm model is not null, then do the rest of the calculations.
     }
     else {
@@ -847,7 +847,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
       cat(paste('',"\n"))
 
       #Return values.
-      return(list(results_df = results_df,meta_analysis = meta_analysis, hlm_mod = hlm_model, rand_df = df_rand, comparison = iarimaxtohlm, error_arimax_skipped = exclude))
+      return(list(results_df = results_df,meta_analysis = meta_analysis, hlm_mod = hlm_model, rand_df = df_rand, comparison = iarimaxtohlm, error_arimax_skipped = exclude, type = 'contemporaneous_predictor'))
      }
     }
 
@@ -1040,7 +1040,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     #If meta analysis is null: Stop and return early.
     if (is.null(meta_analysis)) {
       cat('Skipping RME due to error. Returning metaanalysis = FALSE model. \n')
-      return(list(results_df = results_df, error_arimax_skipped = exclude))
+      return(list(results_df = results_df, error_arimax_skipped = exclude, type = 'contemporaneous_predictor'))
 
     }
     else {
@@ -1073,7 +1073,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     cat(paste('I-ARIMAX algorithm finished.',"\n"))
     cat(paste('',"\n"))
 
-    return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude))
+    return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude, type = 'contemporaneous_predictor'))
 
     }
   }
@@ -1104,7 +1104,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     Sys.sleep(0.8)
     cat(paste('I-ARIMAX algorithm finished.',"\n"))
     cat(paste('',"\n"))
-    return(list(results_df = results_df, error_arimax_skipped = exclude))
+    return(list(results_df = results_df, error_arimax_skipped = exclude, type = 'contemporaneous_predictor'))
 
   }
 

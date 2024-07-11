@@ -16,38 +16,39 @@
 #' @param weight_rma_var Select weight RMA variable. Defaults as NULL, if NULL then the number of valid observations for Y AND X will be used (!is.na).
 #' @param correlation_method Select method for raw semi-partial correlations. Options are: 'spearman', 'pearson' or 'kendall'. Defaults to 'pearson'.
 #'
-#' @returns A list containing a dataframe with the ARIMA parameters, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
+#' @returns A list containing a dataframe with the ARIMA parameters, plus the xreg parameter (the beta value for your x_series and x_series lag) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
 
 
 #######################################
 ############ I ARIMAX FUNCTION #######
 #####################################
 
-IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series, id_var,
-                           metaanalysis = TRUE, hlm_compare = FALSE, timevar, weight_rma = FALSE, weight_rma_var = NULL, correlation_method = 'pearson') {
+IARIMAXoid_Pro_Lag <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series, id_var,
+                           metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL, weight_rma = FALSE, weight_rma_var = NULL, correlation_method = 'pearson') {
 
 
   #To do's.
-    # 1. Create checks for timevar below, as it is mandatory for this one. We need it to arrange data.
-
   # CHeck wether variables are in the in the dataset.
-  required_vars <- c(y_series, x_series, id_var, timevar)
+  required_vars <- c(y_series, x_series, id_var)
 
+  #Check requiered variables.
   if (!all(required_vars %in% colnames(dataframe))) {
     missing_vars <- required_vars[!required_vars %in% colnames(dataframe)]
     stop(paste("Cannot find required variables. Check if you spelled the following variables correctly:", paste(missing_vars, collapse = ", ")))
   }
 
-  if (hlm_compare == TRUE) {
-    if (is.null(timevar)) {
-      stop('You selected hlm_compare, however I cannot compute the model without a time variable. Add it with timevar = "yourtimevariable"')
-    }
+  #Check timevar.
+  if (is.null(timevar)) {
+    stop('Dynamic i-ARIMAX algorithm requieres a time variable to sort your data and lag predictors. Please provide one with timevar = "yourtimevariable"')
+  }
 
+  if (!is.null(timevar)) {
     if (!(timevar %in% colnames(dataframe))) {
       stop(paste0("The time variable '", timevar, "' was not found in the dataframe. Did you spell it correctly?"))
     }
   }
 
+#Check weight RMA variable name.
   if (weight_rma == TRUE & !is.null(weight_rma_var)) {
 
     if (!(weight_rma_var %in% colnames(dataframe))){
@@ -78,19 +79,19 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
     #Append lagged x_series.
   dataframe <- dataframe %>%
     dplyr::group_by(!!id_var_sym) %>%
-    dplyr::mutate(laggedname = dplyr::lag(!!x_series_sym), n = 1L, order_by = !!timevar_sym)
+    dplyr::mutate(xreglag = dplyr::lag(!!x_series_sym), n = 1L, order_by = !!timevar_sym)
 
 
 
   # Filter N complete observations with variance conditions
   counts <- dataframe %>%
     dplyr::group_by(!!id_var_sym) %>%
-    dplyr::filter(!is.na(!!y_series_sym) & !is.na(!!x_series_sym) & !is.na(laggedname)) %>%
+    dplyr::filter(!is.na(!!y_series_sym) & !is.na(!!x_series_sym) & !is.na(xreglag)) %>%
     dplyr::summarise(
       count = dplyr::n(),
       var_y = stats::var(!!y_series_sym, na.rm = TRUE),
       var_x = stats::var(!!x_series_sym, na.rm = TRUE),
-      var_x_lag = stats::var(laggedname, na.rm = TRUE),
+      var_x_lag = stats::var(xreglag, na.rm = TRUE),
       .groups = 'drop'
     ) %>%
     dplyr::filter(count >= min_n_subject, var_y >= minvar, var_x >= minvar, var_x_lag >= minvar)
@@ -204,7 +205,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
     #Extract x vector.
     x_lag_vector <- dataframe %>%
       dplyr::filter(!!id_var_sym == i) %>%
-      dplyr::pull(laggedname)
+      dplyr::pull(xreglag)
 
     #Count number of valid observations.
     n_valid_val <- sum(!is.na(y_vector) & !is.na(x_vector) & !is.na(x_lag_vector))
@@ -603,7 +604,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
 
         #Get number of valid cases.
         dataframe_count_valid <- dataframe %>%
-          dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym,laggedname) %>% #Subset only id variable and x, xlag, and y series.
+          dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym,xreglag) %>% #Subset only id variable and x, xlag, and y series.
           tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
           dplyr::group_by(!!id_var_sym) %>% #group by id.
           dplyr::summarise(weight_variable_n = dplyr::n()) #get the count of valid cases.
@@ -661,7 +662,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
 
       #Get number of valid cases.
       dataframe_count_valid <- dataframe %>%
-        dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym, laggedname) %>% #Subset only id variable and x and y series.
+        dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym, xreglag) %>% #Subset only id variable and x and y series.
         tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
         dplyr::group_by(!!id_var_sym) %>% #group by id.
         dplyr::summarise(weight_variable_n = dplyr::n()) #get the count of valid cases.
@@ -735,7 +736,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
     #If meta analysis is null: Stop and return early.
     if (is.null(meta_analysis)) {
       cat('Skipping RME and HLM model due to error in RME. Returning metaanalysis = FALSE model. \n')
-      return(list(results_df = results_df, error_arimax_skipped = exclude))
+      return(list(results_df = results_df, error_arimax_skipped = exclude, type = 'lagged_predictor'))
       #If meta analysis worked (not null): Continue with the rest of the calculations (HLM in this case.)
     }
     else {
@@ -760,10 +761,10 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
 
     #Run HLM Model.
     # Construct the fixed effects formula
-    fixed_formula <- stats::as.formula(paste(y_series, "~", timevar, "+", x_series, "+", "laggedname"))
+    fixed_formula <- stats::as.formula(paste(y_series, "~", timevar, "+", x_series, "+", "xreglag"))
 
     # Construct the random effects formula
-    random_formula <- stats::as.formula(paste("~ 1 +",x_series, "+", "laggedname", "|", id_var))
+    random_formula <- stats::as.formula(paste("~ 1 +",x_series, "+", "xreglag", "|", id_var))
 
     # Run HLM Model with tryCatch.
     hlm_model <- tryCatch(
@@ -781,7 +782,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
     #Stop early if hlm model had an error.
     if (is.null (hlm_model)){
       # Simplify fixed effects, take away time var.
-      fixed_formula <- stats::as.formula(paste(y_series, "~", x_series,"+", "laggedname"))
+      fixed_formula <- stats::as.formula(paste(y_series, "~", x_series,"+", "xreglag"))
       cat('Simplifying HLM model, deleting time variable from fixed effects',"\n")
       #Run the model again.
       hlm_model <- tryCatch(
@@ -801,7 +802,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
     #Stop early if hlm model had an error.
     if (is.null (hlm_model)){
       # Simplify random effects, take away xreg var.
-      random_formula <- stats::as.formula(paste("~ 1 +", "laggedname", "|", id_var))
+      random_formula <- stats::as.formula(paste("~ 1 +", "xreglag", "|", id_var))
       cat('Simplifying HLM model again, deleting xreg from random effects',"\n")
       #Run the model again.
       hlm_model <- tryCatch(
@@ -821,7 +822,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
     #Stop early if hlm model had an error.
     if (is.null (hlm_model)){
       # Simplify fixed effects, take away xreg.
-      fixed_formula <- stats::as.formula(paste(y_series, "~", "laggedname"))
+      fixed_formula <- stats::as.formula(paste(y_series, "~", "xreglag"))
       cat('Simplifying HLM model again, deleting xreg from fixed effects',"\n")
       #Run the model again.
       hlm_model <- tryCatch(
@@ -841,7 +842,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
     #Stop early if hlm model had an error.
     if (is.null(hlm_model)){
       cat('Skipping HLM model calculations due to error. Returning hlm_model = FALSE model. \n')
-      return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude))
+      return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude, type = 'lagged_predictor'))
       #If hlm model is not null, then do the rest of the calculations.
     }
     else {
@@ -970,7 +971,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
       cat(paste('',"\n"))
 
       #Return values.
-      return(list(results_df = results_df,meta_analysis = meta_analysis, hlm_mod = hlm_model, rand_df = df_rand, comparison = iarimaxtohlm, error_arimax_skipped = exclude))
+      return(list(results_df = results_df,meta_analysis = meta_analysis, hlm_mod = hlm_model, rand_df = df_rand, comparison = iarimaxtohlm, error_arimax_skipped = exclude, type = 'lagged_predictor'))
      }
     }
 
@@ -1031,7 +1032,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
 
         #Get number of valid cases.
         dataframe_count_valid <- dataframe %>%
-          dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym, laggedname) %>% #Subset only id variable, x, xlag, and y series.
+          dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym, xreglag) %>% #Subset only id variable, x, xlag, and y series.
           tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
           dplyr::group_by(!!id_var_sym) %>% #group by id.
           dplyr::summarise(weight_variable_n = dplyr::n()) #get the count of valid cases.
@@ -1089,7 +1090,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
 
       #Get number of valid cases.
       dataframe_count_valid <- dataframe %>%
-        dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym, laggedname) %>% #Subset only id variable, x, xlag, and y series.
+        dplyr::select(!!id_var_sym,!!y_series_sym,!!x_series_sym, xreglag) %>% #Subset only id variable, x, xlag, and y series.
         tidyr::drop_na() %>% #drop_na to avoid extracting a NA weight.
         dplyr::group_by(!!id_var_sym) %>% #group by id.
         dplyr::summarise(weight_variable_n = dplyr::n()) #get the count of valid cases.
@@ -1163,7 +1164,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
     #If meta analysis is null: Stop and return early.
     if (is.null(meta_analysis)) {
       cat('Skipping RME due to error. Returning metaanalysis = FALSE model. \n')
-      return(list(results_df = results_df, error_arimax_skipped = exclude))
+      return(list(results_df = results_df, error_arimax_skipped = exclude, type = 'lagged_predictor'))
 
     }
     else {
@@ -1196,7 +1197,7 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
     cat(paste('I-ARIMAX algorithm finished.',"\n"))
     cat(paste('',"\n"))
 
-    return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude))
+    return(list(results_df = results_df,meta_analysis = meta_analysis, error_arimax_skipped = exclude, type = 'lagged_predictor'))
 
     }
   }
@@ -1227,12 +1228,12 @@ IARIMAXoid_Pro_Dynamic <- function(dataframe, min_n_subject = 20, minvar = 0.01,
     Sys.sleep(0.8)
     cat(paste('I-ARIMAX algorithm finished.',"\n"))
     cat(paste('',"\n"))
-    return(list(results_df = results_df, error_arimax_skipped = exclude))
+    return(list(results_df = results_df, error_arimax_skipped = exclude, type = 'lagged_predictor'))
 
   }
 
 }
 
 
-utils::globalVariables(c("count", "var_y", "var_x",'weight_variable','weight_variable_n','laggedname',
+utils::globalVariables(c("count", "var_y", "var_x",'weight_variable','weight_variable_n','xreglag',
                          'var_x_lag')) #Declare symbolic global variables.

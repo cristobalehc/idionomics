@@ -22,6 +22,8 @@
 
 Plotomatron <- function(dataframe,id_var ,y_series_name = NULL, x_series_name = NULL, alpha_crit_t = 0.05, plot_type = 'caterpillar', lims = c(-1,1)) {
 
+
+
   # Check if plot_type is valid
   if (!plot_type %in% c('caterpillar', 'ecdf', 'density')) {
     stop('Invalid plot_type. Supported plot types are "caterpillar", "ecdf", and "density".')
@@ -36,6 +38,9 @@ Plotomatron <- function(dataframe,id_var ,y_series_name = NULL, x_series_name = 
   }
 
 
+  #Plot for contemporaneous relationships:
+
+
     #Create symbolic variables.
     id_var_sym <- rlang::sym(id_var)
 
@@ -46,6 +51,10 @@ Plotomatron <- function(dataframe,id_var ,y_series_name = NULL, x_series_name = 
   #Critical value.
   crit_val <- stats::qt(1 - (alpha_crit_t / 2), df_plt$df_mod)
 
+
+  ### PLOTS FOR CONTEMPORANEOUS RELATIONSHIPS.
+
+  if(dataframe$type == 'contemporaneous_predictor'){
 
   #Create Caterpillar Plot.
   if (plot_type == 'caterpillar') {
@@ -155,6 +164,124 @@ Plotomatron <- function(dataframe,id_var ,y_series_name = NULL, x_series_name = 
     return(density_plot)
 
   }
+
+  }
+
+  ### PLOTS FOR LAGGED RELATIONSHIPS.
+
+  if(dataframe$type == 'lagged_predictor'){
+
+    #Create Caterpillar Plot.
+    if (plot_type == 'caterpillar') {
+      # Reorder data
+      df_plt <- df_plt %>%
+        dplyr::mutate(!!id_var_sym := forcats::fct_reorder(as.factor(!!id_var_sym), xreg_lag))
+
+      # Create color coding
+      df_plt <- df_plt %>%
+        dplyr::mutate(line_color = dplyr::case_when(
+          xreg_lag - crit_val * stderr_xreg_lag > 0 ~ "green",  # Interval entirely positive
+          xreg_lag + crit_val * stderr_xreg_lag < 0 ~ "red",    # Interval entirely negative
+          TRUE ~ "black"                                # Interval crosses zero or includes it
+        ))
+
+      # Create the plot
+      caterpillar_plot <- ggplot2::ggplot(df_plt, ggplot2::aes(x = !!id_var_sym, y = xreg_lag)) +
+        ggplot2::geom_point() +  # Plot the mean values as points
+        ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5)) +
+        ggplot2::geom_linerange(ggplot2::aes(ymin = xreg_lag - crit_val * stderr_xreg_lag, ymax = xreg_lag + crit_val * stderr_xreg_lag, color = line_color)) +  # Add error bars for +/- 2SD with color based on the new variable
+        ggplot2::scale_color_identity() + # Use the colors specified in the dataframe
+        ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +  # Add a horizontal line at y = 0 for reference
+        ggplot2::coord_flip() +  # Flip the coordinates to make it a horizontal plot
+        ggplot2::labs(x = "Participant ID",
+                      y = "i-ARIMAX Effect Sizes and 95% Confidence Intervals of \nWithin-Person Associations",
+                      title = ifelse(is.null(y_series_name) | is.null(x_series_name), 'X series (t-1) Linked to Y series', paste0(x_series_name, " Linked to  \n", y_series_name)),
+                      caption = "Note: Blue vertical lines represent the RE-MA pooled (nomothetic) effect in the middle\n and the lower and upper bounds of the 95% CI of the pooled effect.\nGreen horizontal lines indicate 95% CI of positive associations and red indicate negative.") +
+        ggplot2::geom_hline(yintercept = dataframe$meta_analysis$beta, color = "blue", linewidth = 1) +  # Add population-level mean intercept line
+        ggplot2::annotate("rect", xmin = -Inf, xmax = Inf, ymin = dataframe$meta_analysis$ci.lb, ymax = dataframe$meta_analysis$ci.ub, alpha = 0.2, color = "blue") + # Add 95% credible interval
+        ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0)) +
+        ggplot2::theme(axis.text.y = ggplot2::element_blank())
+
+      return(caterpillar_plot)
+
+    }
+
+    #Plot empirical cumulative distribution function.
+    if (plot_type == "ecdf") {
+
+      if('rand_df' %in% names(dataframe)) {
+        #Merge random effects to I-arimax dataframe.
+        df_plt <- merge(df_plt, subset(dataframe$rand_df, select = c('Name','random_slope_lag')), by = 'Name', all.x=TRUE)
+      }
+      else {
+        stop('Random effects are requiered for ecdf plot. Please run IARIMAXoid_Pro_Lag with hlm_compare = TRUE.')
+      }
+
+      #Merge MLM estimates to I-arimax dataset.
+
+      #Pivot dataset to long format.
+      df_plt_long <- df_plt %>%
+        dplyr::select(c("Name","xreg_lag","random_slope_lag","raw_correlation")) %>%
+        dplyr::rename(IarimaxLag = xreg_lag, MLMLag = random_slope_lag, RawCorrLag = raw_correlation) %>%
+        tidyr::pivot_longer(
+          cols = c("IarimaxLag","MLMLag","RawCorrLag"),
+          names_to = "Method",
+          values_to = "Estimate"
+        )
+
+      #Create plot.
+      ecdf_plot <- ggplot2::ggplot(df_plt_long, ggplot2::aes(Estimate, colour = Method)) +
+        ggplot2::stat_ecdf(geom = "step", pad = FALSE, linewidth = 1) +
+        ggplot2::ylab("Empirical Cumulative Distribution Function") +
+        ggplot2::xlab(ifelse(is.null(y_series_name) | is.null(x_series_name),"Effect Size of the Link Between \n X series (t-1) and Y series in Daily Life",
+                             paste0("Effect Size of the Link Between \n",x_series_name, " and ",y_series_name, " in Daily Life"))) +
+        ggplot2::scale_y_continuous(breaks = seq(0.00, 1.00, by = 0.10)) +
+        ggplot2::scale_x_continuous(breaks = seq(-1.0, 1.0, by = 0.20)) +
+        ggplot2::theme_bw()
+
+      return(ecdf_plot)
+
+    }
+
+    if (plot_type == "density") {
+
+      if('rand_df' %in% names(dataframe)) {
+        #Merge random effects to I-arimax dataframe.
+        df_plt <- merge(df_plt, subset(dataframe$rand_df, select = c('Name','random_slope_lag')), by = 'Name', all.x=TRUE)
+      }
+      else {
+        stop('Random effects are requiered for density plot. Please run IARIMAXoid_Pro_Lag with hlm_compare = TRUE.')
+      }
+
+      #Pivot dataset to long format.
+      df_plt_long <- df_plt %>%
+        dplyr::select(c("Name","xreg_lag","random_slope_lag","raw_correlation")) %>%
+        dplyr::rename(IarimaxLag = xreg_lag, MLMLag = random_slope_lag, RawCorrLag = raw_correlation) %>%
+        tidyr::pivot_longer(
+          cols = c("IarimaxLag","MLMLag","RawCorrLag"),
+          names_to = "Method",
+          values_to = "Estimate"
+        )
+
+      #Plot density plot.
+      density_plot <- df_plt_long %>%
+        ggplot2::ggplot(ggplot2::aes(x = Estimate, fill = Method)) +
+        ggplot2::geom_density(alpha = 0.5) +
+        ggplot2::ylab("Density") +
+        ggplot2::xlab(ifelse(is.null(y_series_name) | is.null(x_series_name),"Effect Size of the Link Between \n X series (t-1) and Y series in Daily Life",
+                             paste0("Effect Size of the Link Between \n",x_series_name, " and ",y_series_name, " in Daily Life"))) +
+        ggplot2::scale_x_continuous(
+          breaks = seq(lims[1], lims[2], by = 0.20),  # X axis breaks.
+          limits = lims  # Set x-axis limits
+        ) +
+        ggplot2::theme_bw()
+
+      return(density_plot)
+
+    }
+
+  }
+
 
 }
 
