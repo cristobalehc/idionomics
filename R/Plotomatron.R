@@ -286,4 +286,5 @@ Plotomatron <- function(dataframe,id_var ,y_series_name = NULL, x_series_name = 
 }
 
 utils::globalVariables(c('line_color','n_valid','n_params','xreg','stderr_xreg',
-                         'random_slope','raw_correlation','Estimate','Method')) #Declare global variables.
+                         'random_slope','raw_correlation','Estimate','Method',
+                         'xreg_lag','stderr_xreg_lag','random_slope_lag')) #Declare global variables.

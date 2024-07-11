@@ -5,8 +5,8 @@ Authors@R:
    c(
     person("Cristóbal", "Hernández", email = "cristobal.ehc@gmail.com", role = c("cre","aut")),
     person("Joseph", "Ciarrochi", email = "ciarrochij@gmail.com", role = "aut"),
-    person("Baljinder", "Sahdra", email = "baljinder.sahdra@acu.edu.au", role = "aut"),
-    person("Steven", "Hayes", email = "stevenchayes@gmail.com", role = "aut"))
+    person("Steven", "Hayes", email = "stevenchayes@gmail.com", role = "aut"),
+    person("Baljinder", "Sahdra", email = "baljinder.sahdra@acu.edu.au", role = "aut"))
 Description: A set of tools to make idionomic analyses easy to compute and reproduce. Provide your data, select your features and it takes care of the rest.
 License: MIT + file LICENSE
 Encoding: UTF-8
