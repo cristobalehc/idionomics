@@ -446,7 +446,8 @@ IARIMAXoid_Pro_Lag <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_s
 
     #Add number of valid cases.
     n_valid[[i]] <- n_valid_val
-    n_params[[i]] <- length(model$coef)
+    if (!is.null(model)){
+    n_params[[i]] <- length(model$coef)}
 
     #Fill raw correlation if not null.
     if (!is.null(correlation)) {
