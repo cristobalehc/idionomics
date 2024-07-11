@@ -23,6 +23,7 @@ Imports:
     longitudinalData,
     metafor,
     nlme,
+    ppcor,
     rlang,
     tibble,
     tidyr,
