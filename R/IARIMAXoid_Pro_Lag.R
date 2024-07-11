@@ -230,8 +230,9 @@ IARIMAXoid_Pro_Lag <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_s
     #Handle when correlations are null.
     if (is.null(correlation)) {
       raw_correlation[[i]] <- NA
+    } else {
+      raw_correlation[[i]] <- correlation$estimate[4]
     }
-
 
     #Run model and catch errors: TryCatch will do that.
     model <- tryCatch(
@@ -449,10 +450,6 @@ IARIMAXoid_Pro_Lag <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_s
     if (!is.null(model)){
     n_params[[i]] <- length(model$coef)}
 
-    #Fill raw correlation if not null.
-    if (!is.null(correlation)) {
-      raw_correlation[[i]] <- correlation$estimate[4]
-    }
 
     #Finish the text.
     cat(round((casen/(length(names))*100),digits = 1),'% completed',"\n")
@@ -465,39 +462,73 @@ IARIMAXoid_Pro_Lag <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_s
 
   # Convert the lists to vectors
   AR_vector <- unlist(AR_N)
+  cat(length(AR_vector))
   I_vector <- unlist(I_N)
+  cat(length(I_vector))
   MA_vector <- unlist(MA_N)
+  cat(length(MA_vector))
   AR1_vector <- unlist(AR1)
+  cat(length(AR1_vector))
   stderr_AR1_vector <- unlist(stderr_AR1)
+  cat(length(stderr_AR1_vector))
   AR2_vector <- unlist(AR2)
+  cat(length(AR2_vector))
   stderr_AR2_vector <- unlist(stderr_AR2)
+  cat(length(stderr_AR2_vector))
   AR3_vector <- unlist(AR3)
+  cat(length(AR3_vector))
   stderr_AR3_vector <- unlist(stderr_AR3)
+  cat(length(stderr_AR3_vector))
   AR4_vector <- unlist(AR4)
+  cat(length(AR4_vector))
   stderr_AR4_vector <- unlist(stderr_AR4)
+  cat(length(stderr_AR4_vector))
   AR5_vector <- unlist(AR5)
+  cat(length(AR5_vector))
   stderr_AR5_vector <- unlist(stderr_AR5)
+  cat(length(stderr_AR5_vector))
   MA1_vector <- unlist(MA1)
+  cat(length(MA1_vector))
   stderr_MA1_vector <- unlist(stderr_MA1)
+  cat(length(stderr_MA1_vector))
   MA2_vector <- unlist(MA2)
+  cat(length(MA2_vector))
   stderr_MA2_vector <- unlist(stderr_MA2)
+  cat(length(stderr_MA2_vector))
   MA3_vector <- unlist(MA3)
+  cat(length(MA3_vector))
   stderr_MA3_vector <- unlist(stderr_MA3)
+  cat(length(stderr_MA3_vector))
   MA4_vector <- unlist(MA4)
+  cat(length(MA4_vector))
   stderr_MA4_vector <- unlist(stderr_MA4)
+  cat(length(stderr_MA4_vector))
   MA5_vector <- unlist(MA5)
+  cat(length(MA5_vector))
   stderr_MA5_vector <- unlist(stderr_MA5)
+  cat(length(stderr_MA5_vector))
   xreg_vector <- unlist(xreg)
+  cat(length(xreg_vector))
   stderr_xreg_vector <- unlist(stderr_xreg)
+  cat(length(stderr_xreg_vector))
   xreg_lag_vector <- unlist(xreg_lag)
+  cat(length(xreg_lag_vector))
   stderr_xreg_lag_vector <- unlist(stderr_xreg_lag)
+  cat(length(stderr_xreg_lag_vector))
   drift_vector <- unlist(drift)
+  cat(length(drift_vector))
   stderr_drift_vector <- unlist(stderr_drift)
+  cat(length(stderr_drift_vector))
   intercept_vector <- unlist(intercept)
+  cat(length(intercept_vector))
   stderr_intercept_vector <- unlist(stderr_intercept)
+  cat(length(stderr_intercept_vector))
   n_valid_vector <- unlist(n_valid)
+  cat(length(n_valid_vector))
   n_params_vector <- unlist(n_params)
+  cat(length(n_params_vector))
   raw_correlation_vector <- unlist(raw_correlation)
+  cat(length(raw_correlation_vector))
 
   # Combine into a data frame
   results_df <- data.frame(

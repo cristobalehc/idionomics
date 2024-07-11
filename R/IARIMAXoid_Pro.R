@@ -202,6 +202,8 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     #Handle when correlations are null.
     if (is.null(correlation)) {
       raw_correlation[[i]] <- NA
+    } else {
+      raw_correlation[[i]] <- correlation$estimate[4]
     }
 
 
@@ -409,10 +411,6 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     if (!is.null(model)){
       n_params[[i]] <- length(model$coef)}
 
-    #Fill raw correlation if not null.
-    if (!is.null(correlation)) {
-      raw_correlation[[i]] <- correlation$estimate[[1]]
-    }
 
     #Finish the text.
     cat(round((casen/(length(names))*100),digits = 1),'% completed',"\n")
