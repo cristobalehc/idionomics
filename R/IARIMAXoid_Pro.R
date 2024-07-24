@@ -203,7 +203,7 @@ IARIMAXoid_Pro <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_serie
     if (is.null(correlation)) {
       raw_correlation[[i]] <- NA
     } else {
-      raw_correlation[[i]] <- correlation$estimate[4]
+      raw_correlation[[i]] <- correlation$estimate[1]
     }
 
 
