@@ -187,10 +187,7 @@ IARIMAXoid_Pro_Lag <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_s
     #Start text.
     cat(paste('  Applying auto ARIMAX to case: ', as.character(i), ' ... '))
 
-    ##################################################
-    ############### DEV COMMENT ######################
-    ######## HANDLE NA FOR EAC VECTOR BELOW #########
-    #################################################
+      #Extract vectors.
 
     #Extract y vector.
     y_vector <- dataframe %>%
