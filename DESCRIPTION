@@ -11,7 +11,7 @@ Description: A set of tools to make idionomic analyses easy to compute and repro
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 URL: https://github.com/cristobalehc/idionomics
 BugReports: https://github.com/cristobalehc/idionomics/issues
 Imports: 
