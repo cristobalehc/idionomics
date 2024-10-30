@@ -101,7 +101,7 @@ looping_machine <- function(dataframe,a_series,b_series,c_series, id_var,
   cat(paste('.'))
   Sys.sleep(0.4)
   cat(paste('',"\n"))
-  cat(paste('Number of cases with the loop present were:',sum(looping$loop_df$Loop_05_Positive_directed)))
+  cat(paste('Number of cases with the loop present were:',sum(loop_df$Loop_05_Positive_directed)))
 
 
   return(list(loop_df = loop_df,
