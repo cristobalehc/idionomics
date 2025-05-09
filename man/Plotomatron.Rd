@@ -5,7 +5,7 @@
 \title{Create idionomic plots.}
 \usage{
 Plotomatron(
-  dataframe,
+  iarimax_object,
   id_var,
   y_series_name = NULL,
   x_series_name = NULL,
@@ -15,7 +15,7 @@ Plotomatron(
 )
 }
 \arguments{
-\item{dataframe}{Your dataframe.}
+\item{iarimax_object}{Your iarimax object.}
 
 \item{id_var}{Your id variable.}
 
@@ -30,7 +30,7 @@ Plotomatron(
 \item{lims}{a vector of length 2 with limits for the density plot. Defaults to c(-1,1)}
 }
 \value{
-A list containing a dataframe with the ARIMA parameteres, plus the xreg parameter (the beta value for your x_series) together with their std.errors. If metaanalysis = TRUE, will also output a random effects meta analysis. If hlm_compare = TRUE, will also output a model comparison with HLM.
+The plots object.
 }
 \description{
 Create idionomic plots.
