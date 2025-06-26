@@ -45,9 +45,9 @@ i_detrender <- function (df, cols, idvar, timevar, explanation = TRUE, append = 
     Sys.sleep(0.8)
     cat('   If all values for a feature within ID are NA, will return NA',"\n")
     Sys.sleep(0.4)
-    cat('   If there is less than three values, will return NA',"\n")
+    cat('   If there is less than three values (perfect line, zero residual), will return NA',"\n")
     Sys.sleep(0.4)
-    cat('   Else with return the residuals from the linear model with time.',"\n")
+    cat('   Else, will return the residuals from the linear model with time.',"\n")
   }
 
   #Detrend
