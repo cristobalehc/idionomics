@@ -57,8 +57,7 @@ i_standarbot_300 <- function (df, cols, idvar, explanation = TRUE, append = TRUE
     dplyr::mutate(dplyr::across(dplyr::all_of(cols),  #Mutate across all columns.
                   ~ if (all(is.na(.))) NA_real_ else if (sum(!is.na(.)) <2) 0 else if (sd(., na.rm=TRUE) == 0) 0 else (.-mean(., na.rm=TRUE)) / sd(., na.rm=TRUE), #Apply standardization, catch NA, one value,  and zero variance.
                   .names = "{.col}_PSD")) %>% # Add sufix.
-    dplyr::ungroup() %>%
-    dplyr::filter()
+    dplyr::ungroup()
 
 
   # IF append == TRUE, return the original dataframe with new standardized columns appended at the end (right)
