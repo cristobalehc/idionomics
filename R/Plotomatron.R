@@ -23,6 +23,7 @@
 Plotomatron <- function(iarimax_object,id_var ,y_series_name = NULL, x_series_name = NULL, alpha_crit_t = 0.05, plot_type = 'caterpillar', lims = c(-1,1)) {
 
 
+  #Guard clause.
 
   # Check if plot_type is valid
   if (!plot_type %in% c('caterpillar', 'ecdf', 'density')) {
@@ -30,7 +31,7 @@ Plotomatron <- function(iarimax_object,id_var ,y_series_name = NULL, x_series_na
   }
 
 
-  # Check if df is an iarimax object
+  # Check if arimax_object is an iarimax object
   if (is.list(iarimax_object) && all(c('results_df', 'meta_analysis') %in% names(iarimax_object))) {
     df_plt <- iarimax_object$results_df
   } else {

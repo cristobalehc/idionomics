@@ -27,8 +27,7 @@ IARIMAXoid_Pro_Lag <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_s
                            metaanalysis = TRUE, hlm_compare = FALSE, timevar = NULL, weight_rma = FALSE, weight_rma_var = NULL, correlation_method = 'pearson') {
 
 
-  #To do's.
-  # CHeck wether variables are in the in the dataset.
+  # Check whether variables are in the in the dataset.
   required_vars <- c(y_series, x_series, id_var)
 
   #Check requiered variables.
