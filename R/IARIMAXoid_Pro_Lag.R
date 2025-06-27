@@ -499,6 +499,7 @@ IARIMAXoid_Pro_Lag <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_s
     nI = I_vector,
     nMA = MA_vector,
     intercept = intercept_vector,
+    stderr_intercept = stderr_intercept_vector,
     AR1 = AR1_vector,
     stderr_AR1 = stderr_AR1_vector,
     AR2 = AR2_vector,
