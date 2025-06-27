@@ -193,6 +193,6 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
   sden_params <- list(test_type = ttype, selection_mechanism = test, rema_beta = rema_beta, rema_pval = rema_pval, all_sig_sum = all_sig_sum,
                       positive_sig_sum = positive_sig_sum, negative_sig_sum = negative_sig_sum, number_of_effects = number_of_effects, test_pval = bintest$p.value)
 
-  return(list(sden_parameters = sden_params, binomial_test = bintest))
+  return(invisible(list(sden_parameters = sden_params, binomial_test = bintest)))
 }
 

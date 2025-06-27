@@ -27,5 +27,5 @@ i_pval <- function(iarimax_object, feature = "xreg") {
 
 
   #Return the modified object
-  return(iarimax_object)
+  return(invisible(iarimax_object))
 }
