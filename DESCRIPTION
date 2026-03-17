@@ -1,0 +1,29 @@
+Package: idionomicsv2
+Title: Conduct Idiographic-Nomothetic Analyses for Psych Science
+Version: 0.0.0.9000
+Authors@R: 
+   c(
+    person("Cristóbal", "Hernández", email = "cristobal.ehc@gmail.com", role = c("cre","aut")),
+    person("Joseph", "Ciarrochi", email = "ciarrochij@gmail.com", role = "aut"),
+    person("Steven", "Hayes", email = "stevenchayes@gmail.com", role = "aut"),
+    person("Baljinder", "Sahdra", email = "baljinder.sahdra@acu.edu.au", role = "aut"))
+Description: A toolkit for accessible and reproducible idionomic research. Enables individual-level modeling through time-series analysis, and discover functionally relevant principles within your data.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    broom,
+    dplyr,
+    forcats,
+    forecast,
+    ggplot2,
+    metafor,
+    rlang,
+    stats,
+    tibble,
+    tidyr,
+    utils
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
