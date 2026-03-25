@@ -8,14 +8,14 @@ The package is built around intensive longitudinal data (ILD): experience-sampli
 
 ## The idionomic science principle
 
-Classical panel data methods (multilevel models, fixed-effects regression) estimate one set of parameters shared — or partially shared — across all subjects. If the focus of interest is the trajectory of individuals, this is only sensible under hard to meet assumptions such as exchangeability and/or ergodicity. If these assumptions are not met, ensemble averages may systematically obscure individual differences and can produce ecological fallacies: an average positive effect may coexist with a majority of individuals for whom the effect is negative, zero, or present only under specific temporal conditions.
+Classical panel data methods (multilevel models, fixed-effects regression) estimate one set of parameters shared — or partially shared — across all subjects. If the focus of interest is the trajectory of individuals, this is only sensible under hard to meet assumptions such as exchangeability and/or ergodicity. If these assumptions are not met, ensemble averages may systematically obscure individual differences: an average positive effect may coexist with a significant subset of individuals for whom the effect is negative, nonsignificant, or zero. 
 
 Idionomic science inverts the order of operations:
 
 1. **Individual first.** Fit a model to each person's time series independently, capturing that person's unique dynamics, autocorrelation structure, and effect sizes.
 2. **Group later.** Aggregate the individual estimates with meta-analytic, unsupervised clustering or estimate-based methods that explicitly represent and quantify heterogeneity across people.
 
-This preserves the individual's data structure, produces person-specific estimates that can be reported back to participants or used for personalized intervention, and provides honest population-level summaries that distinguish "the average effect is X" from "most people show effect X."
+This preserves the individual's data structure, produces person-specific estimates that can be reported back to participants or used for personalized intervention, and provides honest group-level summaries that distinguish "the average effect is X" from "most people show effect X", "the average effect is null but there are significant effects at both sides", and similar patterns that a single pooled estimate would erase.
 
 
 ---
