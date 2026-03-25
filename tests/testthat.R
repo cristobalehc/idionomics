@@ -1,4 +1,4 @@
 library(testthat)
-library(idionomicsv2)
+library(idionomics)
 
-test_check("idionomicsv2")
+test_check("idionomics")

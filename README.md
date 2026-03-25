@@ -1,6 +1,6 @@
-# idionomicsv2
+# idionomics
 
-**idionomicsv2** is an R toolkit for **idionomic science** — a research philosophy that places the individual at the center of analysis. Rather than fitting a single model to the group and treating between-person averages as the primary finding, idionomic methods model each person separately, then aggregate upward. The group-level picture emerges from individual results, not the other way around.
+**idionomics** is an R toolkit for **idionomic science** — a research philosophy that places the individual at the center of analysis. Rather than fitting a single model to the group and treating between-person averages as the primary finding, idionomic methods model each person separately, then aggregate upward. The group-level picture emerges from individual results, not the other way around.
 
 The package is built around intensive longitudinal data (ILD): experience-sampling, ecological momentary assessment, daily diary, wearable sensor streams, and similar designs where each participant contributes a time series. It provides the full pipeline from preprocessing through modeling to population-level inference.
 
@@ -25,7 +25,7 @@ This preserves the individual's data structure, produces person-specific estimat
 ```r
 # Install from a local source directory (development version)
 install.packages("devtools")
-devtools::install("/path/to/idionomicsv2")
+devtools::install("/path/to/idionomics")
 
 # Or install directly from GitHub:
 devtools::install_github("cristobalehc/idionomics")
@@ -59,7 +59,7 @@ pmstandardize(df, cols, idvar, verbose = FALSE, append = TRUE)
 Computes `(x - person_mean) / person_sd` for each person × column combination. Output columns are named `<col>_psd`.
 
 ```r
-library(idionomicsv2)
+library(idionomics)
 
 set.seed(1)
 panel <- do.call(rbind, lapply(1:4, function(id) {
@@ -202,7 +202,7 @@ summary(loop_result$iarimax_a_to_b)
 ## Full pipeline example
 
 ```r
-library(idionomicsv2)
+library(idionomics)
 
 set.seed(42)
 panel <- do.call(rbind, lapply(1:10, function(id) {
