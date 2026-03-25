@@ -136,14 +136,14 @@ i_detrender <- function(df, cols, idvar, timevar,
           }
         }
       },
-      .names = "{.col}_DT"
+      .names = "{.col}_dt"
     )) |>
     dplyr::ungroup()
 
   if (append) {
     return(df)
   } else {
-    dt_cols <- paste0(cols, "_DT")
+    dt_cols <- paste0(cols, "_dt")
     return(df |>
       dplyr::select(!!idvar_sym, !!timevar_sym, dplyr::all_of(dt_cols)))
   }
