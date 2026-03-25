@@ -46,3 +46,24 @@ Zero-variance subjects are retained as all-zero rows rather than dropped.
 If you plan to pass output to \code{\link[=iarimax]{iarimax()}}, those subjects will be filtered
 out by its \code{minvar} threshold.
 }
+\examples{
+# Build a small panel: 3 subjects, 10 observations each
+set.seed(1)
+panel <- do.call(rbind, lapply(1:3, function(id) {
+  data.frame(
+    id   = as.character(id),
+    time = seq_len(10),
+    x    = rnorm(10, mean = id * 2),  # different person-means
+    y    = rnorm(10),
+    stringsAsFactors = FALSE
+  )
+}))
+
+# Standardize x and y within each person (append = TRUE, the default)
+result <- pmstandardize(panel, cols = c("x", "y"), idvar = "id")
+head(result)  # original columns + x_psd + y_psd
+
+# Return only the ID and standardized columns
+result_slim <- pmstandardize(panel, cols = "x", idvar = "id", append = FALSE)
+head(result_slim)
+}

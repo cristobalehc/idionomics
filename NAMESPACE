@@ -3,6 +3,7 @@
 S3method(plot,iarimax_results)
 S3method(summary,iarimax_results)
 S3method(summary,sden_results)
+export(i_detrender)
 export(i_pval)
 export(iarimax)
 export(looping_machine)

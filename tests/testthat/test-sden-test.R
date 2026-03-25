@@ -59,6 +59,22 @@ make_fake_sden_input <- function(n_pos  = 3,
 # Layer 1 — Fast tests (no auto.arima, no CRAN skip needed)
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ── Attributes ────────────────────────────────────────────────────────────────
+
+test_that("sden_results inherits focal_predictor, id_var, and timevar attributes from iarimax object", {
+  fake   <- make_fake_sden_input()
+  result <- suppressMessages(sden_test(fake))
+  expect_equal(attr(result, "focal_predictor"), attr(fake, "focal_predictor"))
+  expect_equal(attr(result, "id_var"),          attr(fake, "id_var"))
+  expect_equal(attr(result, "timevar"),         attr(fake, "timevar"))
+})
+
+test_that("sden_results is of class sden_results", {
+  fake   <- make_fake_sden_input()
+  result <- suppressMessages(sden_test(fake))
+  expect_s3_class(result, "sden_results")
+})
+
 # ── Validation ────────────────────────────────────────────────────────────────
 
 test_that("sden_test errors on non-iarimax_results input", {
@@ -166,6 +182,16 @@ test_that("auto: significant negative REMA selects SDT counter-negative", {
   fake   <- make_fake_sden_input(rema_beta = -0.5, rema_pval = 0.02)
   result <- suppressMessages(sden_test(fake, test = "auto"))
   expect_equal(result$sden_parameters$test_type, "SDT counter-negative")
+})
+
+test_that("auto: exactly-zero REMA beta with significant p-value falls back to ENT", {
+  # Exercises the else{} branch (lines 117-125) in auto mode:
+  # rema_pval < 0.05 but rema_beta == 0 exactly (neither > 0 nor < 0).
+  fake   <- make_fake_sden_input(rema_beta = 0, rema_pval = 0.01)
+  result <- suppressMessages(sden_test(fake, test = "auto"))
+  expect_equal(result$sden_parameters$test_type, "ENT")
+  expect_equal(result$sden_parameters$sig_effects, result$sden_parameters$all_sig_sum)
+  expect_equal(result$sden_parameters$selection_mechanism, "auto")
 })
 
 # ── Manual test selection ─────────────────────────────────────────────────────

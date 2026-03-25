@@ -2,14 +2,23 @@
 # step manually. These tests are slow (auto.arima runs twice per subject:
 # once inside iarimax and once in the manual comparison below) and are
 # skipped on CRAN.
+#
+# Uses the same memoised accessor pattern as test-iarimax-output-structure.R
+# so that skip_on_cran() fires inside each test, not at file level.
 
-skip_on_cran()
-
-panel  <- make_panel(n_subjects = 3, n_obs = 25, seed = 42)
-result <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
-                  id_var = "id", timevar = "time")
-
+panel    <- make_panel(n_subjects = 3, n_obs = 25, seed = 42)
 subjects <- unique(panel$id)
+
+.cc_cache <- new.env(parent = emptyenv())
+
+.get_result <- function() {
+  if (!exists("r", envir = .cc_cache)) {
+    skip_on_cran()
+    .cc_cache$r <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
+                           id_var = "id", timevar = "time")
+  }
+  .cc_cache$r
+}
 
 # Helper: reproduce exactly what iarimax does for one subject.
 manual_fit <- function(data, subj) {
@@ -37,6 +46,7 @@ manual_fit <- function(data, subj) {
 # ── xreg coefficient ─────────────────────────────────────────────────────────
 
 test_that("estimate_x matches manual auto.arima for each subject", {
+  result <- .get_result()
   for (subj in subjects) {
     m       <- manual_fit(panel, subj)
     pkg_row <- result$results_df[result$results_df$id == subj, ]
@@ -50,6 +60,7 @@ test_that("estimate_x matches manual auto.arima for each subject", {
 })
 
 test_that("std.error_x matches manual auto.arima for each subject", {
+  result <- .get_result()
   for (subj in subjects) {
     m       <- manual_fit(panel, subj)
     pkg_row <- result$results_df[result$results_df$id == subj, ]
@@ -65,6 +76,7 @@ test_that("std.error_x matches manual auto.arima for each subject", {
 # ── ARIMA orders ──────────────────────────────────────────────────────────────
 
 test_that("ARIMA order (nAR, nI, nMA) matches manual auto.arima for each subject", {
+  result <- .get_result()
   for (subj in subjects) {
     m       <- manual_fit(panel, subj)
     pkg_row <- result$results_df[result$results_df$id == subj, ]
@@ -77,6 +89,7 @@ test_that("ARIMA order (nAR, nI, nMA) matches manual auto.arima for each subject
 # ── Raw correlation ───────────────────────────────────────────────────────────
 
 test_that("raw_cor (pearson) matches manual cor.test for each subject", {
+  result <- .get_result()
   for (subj in subjects) {
     m       <- manual_fit(panel, subj)
     pkg_row <- result$results_df[result$results_df$id == subj, ]
@@ -86,6 +99,7 @@ test_that("raw_cor (pearson) matches manual cor.test for each subject", {
 })
 
 test_that("raw_cor (spearman) matches manual cor.test for each subject", {
+  skip_on_cran()
   result_s <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
                       id_var = "id", timevar = "time",
                       correlation_method = "spearman")
@@ -98,6 +112,7 @@ test_that("raw_cor (spearman) matches manual cor.test for each subject", {
 })
 
 test_that("raw_cor (kendall) matches manual cor.test for each subject", {
+  skip_on_cran()
   result_k <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
                       id_var = "id", timevar = "time",
                       correlation_method = "kendall")
@@ -116,6 +131,7 @@ test_that("raw_cor (kendall) matches manual cor.test for each subject", {
 # ── n_valid ───────────────────────────────────────────────────────────────────
 
 test_that("n_valid matches stats::nobs of manual model for each subject", {
+  result <- .get_result()
   for (subj in subjects) {
     m       <- manual_fit(panel, subj)
     pkg_row <- result$results_df[result$results_df$id == subj, ]
@@ -127,6 +143,8 @@ test_that("n_valid matches stats::nobs of manual model for each subject", {
 # ── Temporal ordering ─────────────────────────────────────────────────────────
 
 test_that("shuffled input gives identical results to sorted input", {
+  skip_on_cran()
+  result  <- .get_result()
   set.seed(99)
   shuffled        <- panel[sample(nrow(panel)), ]
   result_shuffled <- iarimax(dataframe = shuffled, y_series = "y", x_series = "x",
@@ -146,6 +164,7 @@ test_that("shuffled input gives identical results to sorted input", {
 # ── n_params ──────────────────────────────────────────────────────────────────
 
 test_that("n_params matches length(model$coef) for each subject", {
+  result <- .get_result()
   for (subj in subjects) {
     m       <- manual_fit(panel, subj)
     pkg_row <- result$results_df[result$results_df$id == subj, ]
@@ -160,8 +179,9 @@ test_that("n_params matches length(model$coef) for each subject", {
 # ── REMA standard errors ──────────────────────────────────────────────────────
 
 test_that("REMA sampling variances equal std.error_x squared", {
-  df    <- result$results_df
-  valid <- !is.na(df[["std.error_x"]])  # metafor silently drops NA rows, so lengths must match
+  result <- .get_result()
+  df     <- result$results_df
+  valid  <- !is.na(df[["std.error_x"]])
   expect_equal(
     as.numeric(result$meta_analysis$vi),
     df[["std.error_x"]][valid]^2,
@@ -174,15 +194,14 @@ test_that("REMA sampling variances equal std.error_x squared", {
 # observations the REMA pooled estimate should recover it.
 
 test_that("REMA pooled estimate recovers the true effect (0.5) in a larger panel", {
+  skip_on_cran()
   big_panel  <- make_panel(n_subjects = 10, n_obs = 35, seed = 42)
   result_big <- iarimax(dataframe = big_panel, y_series = "y", x_series = "x",
                         id_var = "id", timevar = "time")
   rema_est <- as.numeric(result_big$meta_analysis$beta)
 
-  # Correct sign
   expect_true(rema_est > 0,
               label = paste("REMA estimate", round(rema_est, 3), "should be positive"))
-  # Within reasonable range of true value 0.5
   expect_true(abs(rema_est - 0.5) < 0.35,
               label = paste("REMA estimate", round(rema_est, 3),
                             "should be within 0.35 of true value 0.5"))

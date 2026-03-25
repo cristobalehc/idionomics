@@ -142,6 +142,14 @@ test_that("i_pval errors when feature column is missing", {
                "not found")
 })
 
+test_that("i_pval errors when std.error column is absent but estimate column exists", {
+  # Exercises the second stop() guard (lines 30-32): estimate_x exists but
+  # std.error_x has been removed, so only the SE check fires.
+  fake <- make_fake_iarimax()
+  fake$results_df[["std.error_x"]] <- NULL
+  expect_error(i_pval(fake), "Standard error column")
+})
+
 test_that("i_pval returns NA (not NaN) and warns when df <= 0", {
   # n_valid == n_params => df = 0 for subject 1
   fake <- make_fake_iarimax()
@@ -154,6 +162,37 @@ test_that("i_pval returns NA (not NaN) and warns when df <= 0", {
   expect_true(is.na(pvals[1]))    # df = 0  -> NA, not NaN
   expect_false(is.na(pvals[2]))   # df = 23 -> valid p-value
   expect_false(is.na(pvals[3]))
+})
+
+test_that("i_pval returns NA (not NaN) when both estimate and SE are exactly zero", {
+  fake <- make_fake_iarimax()
+  fake$results_df$estimate_x       <- c(0.0, -0.3, 0.8)
+  fake$results_df[["std.error_x"]] <- c(0.0,  0.15, 0.2)
+  result <- i_pval(fake)
+  pvals  <- result$results_df$pval_x
+  expect_true(is.na(pvals[1]))     # 0/0 -> NA, not NaN
+  expect_false(is.nan(pvals[1]))
+  expect_false(is.na(pvals[2]))
+  expect_false(is.na(pvals[3]))
+})
+
+test_that("calling i_pval() twice does not change p-values or add duplicate columns", {
+  fake  <- make_fake_iarimax()
+  once  <- i_pval(fake)
+  twice <- i_pval(once)
+  expect_equal(twice$results_df$pval_x, once$results_df$pval_x)
+  expect_equal(names(twice$results_df), names(once$results_df))
+})
+
+test_that("i_pval preserves all iarimax_results attributes", {
+  fake <- make_fake_iarimax()
+  attr(fake, "outcome") <- "y"
+  result <- i_pval(fake)
+  expect_equal(attr(result, "focal_predictor"), "x")
+  expect_equal(attr(result, "id_var"),          "id")
+  expect_equal(attr(result, "timevar"),         "time")
+  expect_equal(attr(result, "outcome"),         "y")
+  expect_s3_class(result, "iarimax_results")
 })
 
 test_that("each subject's p-value corresponds to its own estimate and SE, not a neighbour's", {

@@ -35,7 +35,7 @@
 #' level. Check the ARIMA orders in each leg's \code{results_df} before
 #' interpreting the sign of \code{Loop_positive_directed}.
 #'
-#' @returns A named list:
+#' @return A named list:
 #' \describe{
 #'   \item{loop_df}{Per-subject dataframe with coefficients, SEs, n_valid, n_params, p-values, and \code{Loop_positive_directed} (1 = positive loop, 0 = not, NA = ARIMAX failed in at least one leg).}
 #'   \item{alpha}{Significance threshold used.}
@@ -43,6 +43,26 @@
 #'   \item{include_third_as_covariate}{Logical; whether the third variable was added as a covariate.}
 #'   \item{loop_case_detail}{List with \code{n_in_loop_df}, \code{n_complete}, and \code{n_na_indicator} (subjects with a failed model in any leg).}
 #'   \item{iarimax_a_to_b,iarimax_b_to_c,iarimax_c_to_a}{\code{iarimax_results} objects for each leg, with \code{i_pval} already applied.}
+#' }
+#'
+#' @examples
+#' \donttest{
+#' # Build a panel with three correlated variables
+#' set.seed(7)
+#' panel <- do.call(rbind, lapply(1:6, function(id) {
+#'   a <- rnorm(30)
+#'   b <- 0.4 * a + rnorm(30)
+#'   c <- 0.4 * b + rnorm(30)
+#'   data.frame(id = as.character(id), time = seq_len(30),
+#'              a = a, b = b, c = c, stringsAsFactors = FALSE)
+#' }))
+#'
+#' loop_result <- looping_machine(panel,
+#'                                a_series = "a", b_series = "b", c_series = "c",
+#'                                id_var   = "id", timevar  = "time")
+#'
+#' # Proportion of subjects with a detected positive directed loop
+#' mean(loop_result$loop_df$Loop_positive_directed, na.rm = TRUE)
 #' }
 
 
@@ -70,6 +90,15 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
   if (!is.numeric(alpha) || length(alpha) != 1 || !is.finite(alpha) ||
       alpha <= 0 || alpha >= 1) {
     stop("alpha must be a single finite numeric value strictly between 0 and 1. Got: ", alpha)
+  }
+
+  # Guard: covariates must not overlap with the loop variables.
+  if (!is.null(covariates)) {
+    overlap <- intersect(covariates, series_names)
+    if (length(overlap) > 0) {
+      stop("'covariates' must not overlap with a_series, b_series, or c_series. ",
+           "Overlapping variables: ", paste(overlap, collapse = ", "))
+    }
   }
 
   # Create name tags.

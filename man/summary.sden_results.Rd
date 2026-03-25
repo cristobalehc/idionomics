@@ -17,3 +17,17 @@ Invisibly returns \code{object}, called for its side effect of printing.
 \description{
 Summary method for sden_results objects.
 }
+\examples{
+\donttest{
+set.seed(1)
+panel <- do.call(rbind, lapply(1:6, function(id) {
+  x <- rnorm(30)
+  data.frame(id = as.character(id), time = seq_len(30),
+             x = x, y = 0.5 * x + rnorm(30), stringsAsFactors = FALSE)
+}))
+result <- iarimax(panel, y_series = "y", x_series = "x",
+                  id_var = "id", timevar = "time")
+sden <- sden_test(result)
+summary(sden)
+}
+}

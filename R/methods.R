@@ -4,10 +4,22 @@
 #' @param alpha Significance threshold used for per-subject positive/negative
 #'   significant counts. Defaults to 0.05.
 #' @param ... Additional arguments (ignored).
-#' @returns Invisibly returns \code{object}, called for its side effect of printing.
+#' @return Invisibly returns \code{object}, called for its side effect of printing.
 #' @importFrom stats predict
 #' @export
 #' @method summary iarimax_results
+#' @examples
+#' \donttest{
+#' set.seed(1)
+#' panel <- do.call(rbind, lapply(1:6, function(id) {
+#'   x <- rnorm(30)
+#'   data.frame(id = as.character(id), time = seq_len(30),
+#'              x = x, y = 0.5 * x + rnorm(30), stringsAsFactors = FALSE)
+#' }))
+#' result <- iarimax(panel, y_series = "y", x_series = "x",
+#'                   id_var = "id", timevar = "time")
+#' summary(result)
+#' }
 summary.iarimax_results <- function(object, alpha = 0.05, ...) {
 
   focal  <- attr(object, "focal_predictor")
@@ -98,9 +110,22 @@ summary.iarimax_results <- function(object, alpha = 0.05, ...) {
 #' @param alpha_crit_t Critical value for per-subject significance colouring. Defaults to 0.05.
 #' @param lims Numeric vector of length 2 setting the effect size axis limits. Defaults to \code{c(-1, 1)}.
 #' @param ... Additional arguments (ignored).
-#' @returns A ggplot2 object.
+#' @return A ggplot2 object.
 #' @export
 #' @method plot iarimax_results
+#' @examples
+#' \donttest{
+#' set.seed(1)
+#' panel <- do.call(rbind, lapply(1:6, function(id) {
+#'   x <- rnorm(30)
+#'   data.frame(id = as.character(id), time = seq_len(30),
+#'              x = x, y = 0.5 * x + rnorm(30), stringsAsFactors = FALSE)
+#' }))
+#' result <- iarimax(panel, y_series = "y", x_series = "x",
+#'                   id_var = "id", timevar = "time")
+#' plot(result)
+#' plot(result, y_series_name = "Mood", x_series_name = "Stress")
+#' }
 plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
                                  x_series_name = NULL, alpha_crit_t = 0.05,
                                  lims = c(-1, 1), ...) {
@@ -189,9 +214,22 @@ plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
 #'
 #' @param object An object of class \code{sden_results}.
 #' @param ... Additional arguments (ignored).
-#' @returns Invisibly returns \code{object}, called for its side effect of printing.
+#' @return Invisibly returns \code{object}, called for its side effect of printing.
 #' @export
 #' @method summary sden_results
+#' @examples
+#' \donttest{
+#' set.seed(1)
+#' panel <- do.call(rbind, lapply(1:6, function(id) {
+#'   x <- rnorm(30)
+#'   data.frame(id = as.character(id), time = seq_len(30),
+#'              x = x, y = 0.5 * x + rnorm(30), stringsAsFactors = FALSE)
+#' }))
+#' result <- iarimax(panel, y_series = "y", x_series = "x",
+#'                   id_var = "id", timevar = "time")
+#' sden <- sden_test(result)
+#' summary(sden)
+#' }
 summary.sden_results <- function(object, ...) {
 
   #Import attributes.

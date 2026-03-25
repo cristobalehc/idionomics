@@ -18,7 +18,34 @@
 #'   but does not affect any computation in those modes.
 #' @param feature Feature name to run sden test. Defaults to iarimax focal predictor. Use your original name, function will automatically append "estimate_"
 #'
-#' @returns The appropriate sden test.
+#' @return An S3 object of class \code{sden_results} with two elements:
+#'   \code{sden_parameters} (a named list with test type, selection mechanism,
+#'   REMA beta, p-null, significance counts, and binomial p-value) and
+#'   \code{binomial_test} (the \code{htest} object from \code{stats::binom.test}).
+#'   Attributes \code{focal_predictor}, \code{id_var}, and \code{timevar} are
+#'   inherited from the input \code{iarimax_object}.
+#'
+#' @examples
+#' \donttest{
+#' set.seed(1)
+#' panel <- do.call(rbind, lapply(1:6, function(id) {
+#'   x <- rnorm(30)
+#'   data.frame(id = as.character(id), time = seq_len(30),
+#'              x = x, y = 0.5 * x + rnorm(30),
+#'              stringsAsFactors = FALSE)
+#' }))
+#'
+#' result <- iarimax(panel, y_series = "y", x_series = "x",
+#'                   id_var = "id", timevar = "time",
+#'                   min_n_subject = 20)
+#'
+#' # Automatic test selection based on pooled REMA effect
+#' sden <- sden_test(result)
+#' summary(sden)
+#'
+#' # Force ENT regardless of REMA
+#' sden_ent <- sden_test(result, test = "ENT")
+#' }
 
 sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, test = "auto", feature = NULL){
 

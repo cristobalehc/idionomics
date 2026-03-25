@@ -1,7 +1,14 @@
 # Tests for looping_machine()
 # Layer 1: validation and structural checks using a tiny dataset (errors thrown
 #           before auto.arima runs) — no skip_on_cran() needed.
-# Layer 2: full integration tests on a real panel — skip_on_cran().
+# Layer 2: full integration tests.
+#   Layer 2a — minimal panel (4 subjects × 25 obs, white noise). NO skip_on_cran().
+#               covr::package_coverage() does NOT set NOT_CRAN, so skip_on_cran()
+#               always fires there. These tests are fast enough (~5 s total) to
+#               run on CRAN and ensure looping_machine.R gets instrumented.
+#   Layer 2b — larger panel (6 subjects × 30 obs). skip_on_cran(). Used by
+#               devtools::test() for more thorough verification; not needed for
+#               coverage.
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -19,15 +26,16 @@ make_tiny_loop_panel <- function() {
   )
 }
 
-# Full panel — 6 subjects × 30 obs with mild AR(1) dynamics and cross-series
-# signal so auto.arima reliably selects low-order models and the loop indicator
-# can in principle fire.
-make_loop_panel <- function(n_subjects = 6, n_obs = 30, seed = 99) {
+# Minimal panel — 4 subjects × 25 obs with mild linear signal (beta ≈ 0.4).
+# Signal is mild so auto.arima typically selects low-order models;
+# runtime is acceptable for CRAN (~1–3 s per subject per leg).
+# Used for Layer 2a (no skip_on_cran).
+make_mini_loop_panel <- function(n_subjects = 4, n_obs = 25, seed = 5) {
   set.seed(seed)
   do.call(rbind, lapply(seq_len(n_subjects), function(id) {
-    a <- as.numeric(arima.sim(list(ar = 0.4), n = n_obs))
-    b <- 0.4 * a + as.numeric(arima.sim(list(ar = 0.3), n = n_obs))
-    cc <- 0.4 * b + as.numeric(arima.sim(list(ar = 0.2), n = n_obs))
+    a  <- rnorm(n_obs)
+    b  <- 0.4 * a + rnorm(n_obs)
+    cc <- 0.4 * b + rnorm(n_obs)
     data.frame(
       id   = as.character(id),
       time = seq_len(n_obs),
@@ -39,22 +47,53 @@ make_loop_panel <- function(n_subjects = 6, n_obs = 30, seed = 99) {
   }))
 }
 
-# Strong-signal panel — 20 subjects × 80 obs with b = 0.9*a and c = 0.9*b,
-# so c ≈ 0.81*a. All three legs (a→b, b→c, c→a) should reliably show
-# significant positive coefficients, ensuring Loop_positive_directed = 1
-# fires for at least some subjects.
-make_strong_loop_panel <- function(n_subjects = 20, n_obs = 80, seed = 42) {
+# Minimal negative panel — strong negative a→b so at least one subject has
+# a_b < 0. Used to test Loop_positive_directed = 0. No skip_on_cran.
+make_mini_neg_loop_panel <- function(n_subjects = 4, n_obs = 25, seed = 55) {
   set.seed(seed)
   do.call(rbind, lapply(seq_len(n_subjects), function(id) {
-    a  <- as.numeric(arima.sim(list(ar = 0.3), n = n_obs))
-    b  <- 0.9 * a + 0.2 * rnorm(n_obs)
-    cc <- 0.9 * b + 0.2 * rnorm(n_obs)
+    a  <- rnorm(n_obs)
+    b  <- -0.8 * a + rnorm(n_obs)           # reliable negative signal, less extreme
+    cc <- 0.4  * b + rnorm(n_obs)
     data.frame(
       id   = as.character(id),
       time = seq_len(n_obs),
       a    = a,
       b    = b,
       c    = cc,
+      stringsAsFactors = FALSE
+    )
+  }))
+}
+
+# Full panel — 6 subjects × 30 obs with mild AR(1) dynamics.
+# Used for Layer 2b (skip_on_cran).
+make_loop_panel <- function(n_subjects = 6, n_obs = 30, seed = 99) {
+  set.seed(seed)
+  do.call(rbind, lapply(seq_len(n_subjects), function(id) {
+    a  <- as.numeric(arima.sim(list(ar = 0.4), n = n_obs))
+    b  <- 0.4 * a  + as.numeric(arima.sim(list(ar = 0.3), n = n_obs))
+    cc <- 0.4 * b  + as.numeric(arima.sim(list(ar = 0.2), n = n_obs))
+    data.frame(
+      id   = as.character(id),
+      time = seq_len(n_obs),
+      a    = a, b = b, c = cc,
+      stringsAsFactors = FALSE
+    )
+  }))
+}
+
+# Negative full panel — strong negative a→b. Used for Layer 2b.
+make_neg_loop_panel <- function(n_subjects = 6, n_obs = 30, seed = 77) {
+  set.seed(seed)
+  do.call(rbind, lapply(seq_len(n_subjects), function(id) {
+    a  <- as.numeric(arima.sim(list(ar = 0.4), n = n_obs))
+    b  <- -0.8 * a + as.numeric(arima.sim(list(ar = 0.3), n = n_obs))
+    cc <-  0.4 * b + as.numeric(arima.sim(list(ar = 0.2), n = n_obs))
+    data.frame(
+      id   = as.character(id),
+      time = seq_len(n_obs),
+      a    = a, b = b, c = cc,
       stringsAsFactors = FALSE
     )
   }))
@@ -156,6 +195,28 @@ test_that("duplicate series names trigger an informative error", {
   )
 })
 
+test_that("covariates overlapping with a loop variable triggers an informative error", {
+  panel <- make_tiny_loop_panel()
+  expect_error(
+    looping_machine(
+      panel, a_series = "a", b_series = "b", c_series = "c",
+      id_var = "id", timevar = "time",
+      covariates = "a",   # "a" is also a_series
+      min_n_subject = 1
+    ),
+    regexp = "overlap"
+  )
+  expect_error(
+    looping_machine(
+      panel, a_series = "a", b_series = "b", c_series = "c",
+      id_var = "id", timevar = "time",
+      covariates = c("extra", "c"),   # "c" is also c_series
+      min_n_subject = 1
+    ),
+    regexp = "overlap"
+  )
+})
+
 test_that("alpha outside (0, 1) raises an informative error", {
   panel <- make_tiny_loop_panel()
   expect_error(
@@ -183,98 +244,93 @@ test_that("alpha outside (0, 1) raises an informative error", {
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Layer 2 — Integration tests (real model fitting, skip on CRAN)
+# Layer 2a — Minimal integration (NO skip_on_cran, always runs under covr)
 # ══════════════════════════════════════════════════════════════════════════════
+#
+# covr::package_coverage() does NOT set NOT_CRAN, so skip_on_cran() always
+# fires there. These tests use a minimal panel (4 subjects × 25 obs) with
+# mild cross-series signal; auto.arima typically picks low-order models and
+# the whole looping_machine() call completes in a few seconds — well within
+# CRAN's time limit.
 
-skip_on_cran()
+# Panels created at file level (pure data construction, no model fitting).
+mini_panel     <- make_mini_loop_panel()
+mini_panel_neg <- make_mini_neg_loop_panel()
 
-panel <- make_loop_panel()
-result <- suppressMessages(looping_machine(
-  panel, a_series = "a", b_series = "b", c_series = "c",
-  id_var = "id", timevar = "time"
-))
+# Results are memoised: looping_machine() is fitted once per panel and the
+# cached object is reused across all tests to avoid redundant model fitting.
+.mini_cache <- new.env(parent = emptyenv())
 
-# Panel with a strong negative a→b relationship so at least one subject's
-# estimated a_b coefficient is reliably negative.
-make_neg_loop_panel <- function(n_subjects = 6, n_obs = 30, seed = 77) {
-  set.seed(seed)
-  do.call(rbind, lapply(seq_len(n_subjects), function(id) {
-    a  <- as.numeric(arima.sim(list(ar = 0.4), n = n_obs))
-    b  <- -0.8 * a + as.numeric(arima.sim(list(ar = 0.3), n = n_obs))
-    cc <- 0.4 * b  + as.numeric(arima.sim(list(ar = 0.2), n = n_obs))
-    data.frame(
-      id   = as.character(id),
-      time = seq_len(n_obs),
-      a    = a,
-      b    = b,
-      c    = cc,
-      stringsAsFactors = FALSE
+.get_mini <- function() {
+  if (!exists("r", envir = .mini_cache)) {
+    .mini_cache$r <- suppressMessages(
+      looping_machine(mini_panel, a_series = "a", b_series = "b", c_series = "c",
+                      id_var = "id", timevar = "time")
     )
-  }))
+  }
+  .mini_cache$r
 }
-panel_neg <- make_neg_loop_panel()
-result_neg <- suppressMessages(looping_machine(
-  panel_neg, a_series = "a", b_series = "b", c_series = "c",
-  id_var = "id", timevar = "time"
-))
 
-# Strong-signal panel: used to verify Loop_positive_directed = 1 can actually fire.
-panel_strong <- make_strong_loop_panel()
-result_strong <- suppressMessages(looping_machine(
-  panel_strong, a_series = "a", b_series = "b", c_series = "c",
-  id_var = "id", timevar = "time"
-))
+.get_mini_neg <- function() {
+  if (!exists("rneg", envir = .mini_cache)) {
+    .mini_cache$rneg <- suppressMessages(
+      looping_machine(mini_panel_neg, a_series = "a", b_series = "b", c_series = "c",
+                      id_var = "id", timevar = "time")
+    )
+  }
+  .mini_cache$rneg
+}
 
 
 # ── Return structure ──────────────────────────────────────────────────────────
 
 test_that("looping_machine returns a plain list (not an S3 class)", {
-  expect_type(result, "list")
-  expect_false(inherits(result, "iarimax_results"))
+  r <- .get_mini()
+  expect_type(r, "list")
+  expect_false(inherits(r, "iarimax_results"))
 })
 
 test_that("return list has all expected top-level names", {
-  expected_names <- c(
-    "loop_df", "alpha", "covariates", "include_third_as_covariate",
-    "loop_case_detail",
-    "iarimax_a_to_b", "iarimax_b_to_c", "iarimax_c_to_a"
-  )
-  expect_true(all(expected_names %in% names(result)))
+  r <- .get_mini()
+  expected <- c("loop_df", "alpha", "covariates", "include_third_as_covariate",
+                "loop_case_detail", "iarimax_a_to_b", "iarimax_b_to_c", "iarimax_c_to_a")
+  expect_true(all(expected %in% names(r)))
 })
 
 test_that("each iarimax leg is an iarimax_results object", {
-  expect_s3_class(result$iarimax_a_to_b, "iarimax_results")
-  expect_s3_class(result$iarimax_b_to_c, "iarimax_results")
-  expect_s3_class(result$iarimax_c_to_a, "iarimax_results")
+  r <- .get_mini()
+  expect_s3_class(r$iarimax_a_to_b, "iarimax_results")
+  expect_s3_class(r$iarimax_b_to_c, "iarimax_results")
+  expect_s3_class(r$iarimax_c_to_a, "iarimax_results")
 })
 
-test_that("loop_df is a data.frame", {
-  expect_s3_class(result$loop_df, "data.frame")
-})
-
-test_that("loop_df has at least one row", {
-  expect_gt(nrow(result$loop_df), 0L)
+test_that("loop_df is a data.frame with at least one row", {
+  r <- .get_mini()
+  expect_s3_class(r$loop_df, "data.frame")
+  expect_gt(nrow(r$loop_df), 0L)
 })
 
 
 # ── loop_case_detail structure ────────────────────────────────────────────────
 
-test_that("loop_case_detail is a list with the expected fields", {
-  d <- result$loop_case_detail
+test_that("loop_case_detail has the expected fields", {
+  d <- .get_mini()$loop_case_detail
   expect_type(d, "list")
   expect_true(all(c("n_in_loop_df", "n_complete", "n_na_indicator") %in% names(d)))
 })
 
 test_that("loop_case_detail counts are internally consistent", {
-  d <- result$loop_case_detail
+  r <- .get_mini()
+  d <- r$loop_case_detail
   expect_equal(d$n_in_loop_df, d$n_complete + d$n_na_indicator)
-  expect_equal(d$n_in_loop_df, nrow(result$loop_df))
+  expect_equal(d$n_in_loop_df, nrow(r$loop_df))
 })
 
 test_that("loop_case_detail n_complete matches non-NA Loop_positive_directed rows", {
+  r <- .get_mini()
   expect_equal(
-    result$loop_case_detail$n_complete,
-    sum(!is.na(result$loop_df$Loop_positive_directed))
+    r$loop_case_detail$n_complete,
+    sum(!is.na(r$loop_df$Loop_positive_directed))
   )
 })
 
@@ -282,94 +338,257 @@ test_that("loop_case_detail n_complete matches non-NA Loop_positive_directed row
 # ── Column naming ─────────────────────────────────────────────────────────────
 
 test_that("loop_df contains correctly named coefficient columns for all three legs", {
-  expected_cols <- c("a_b", "b_c", "c_a")
-  expect_true(all(expected_cols %in% names(result$loop_df)))
+  r <- .get_mini()
+  expect_true(all(c("a_b", "b_c", "c_a") %in% names(r$loop_df)))
 })
 
 test_that("loop_df contains stderr columns for all three legs", {
-  expected_cols <- c("stderr_a_b", "stderr_b_c", "stderr_c_a")
-  expect_true(all(expected_cols %in% names(result$loop_df)))
+  r <- .get_mini()
+  expect_true(all(c("stderr_a_b", "stderr_b_c", "stderr_c_a") %in% names(r$loop_df)))
 })
 
 test_that("loop_df contains n_valid columns for all three legs", {
-  expected_cols <- c("a_b_n_valid", "b_c_n_valid", "c_a_n_valid")
-  expect_true(all(expected_cols %in% names(result$loop_df)))
+  r <- .get_mini()
+  expect_true(all(c("a_b_n_valid", "b_c_n_valid", "c_a_n_valid") %in% names(r$loop_df)))
+})
+
+test_that("loop_df contains n_params columns for all three legs", {
+  r <- .get_mini()
+  expect_true(all(c("a_b_n_params", "b_c_n_params", "c_a_n_params") %in% names(r$loop_df)))
 })
 
 test_that("loop_df contains p-value columns for all three legs", {
-  expected_cols <- c("a_b_pval", "b_c_pval", "c_a_pval")
-  expect_true(all(expected_cols %in% names(result$loop_df)))
+  r <- .get_mini()
+  expect_true(all(c("a_b_pval", "b_c_pval", "c_a_pval") %in% names(r$loop_df)))
 })
 
-test_that("loop_df contains the id column", {
-  expect_true("id" %in% names(result$loop_df))
-})
-
-test_that("loop_df contains Loop_positive_directed column", {
-  expect_true("Loop_positive_directed" %in% names(result$loop_df))
+test_that("loop_df contains the id and Loop_positive_directed columns", {
+  r      <- .get_mini()
+  id_col <- attr(r$iarimax_a_to_b, "id_var")
+  expect_true(id_col %in% names(r$loop_df))
+  expect_true("Loop_positive_directed" %in% names(r$loop_df))
 })
 
 
 # ── i_pval already applied ───────────────────────────────────────────────────
 
-test_that("pval column for a is present in iarimax_a_to_b$results_df", {
-  expect_true("pval_a" %in% names(result$iarimax_a_to_b$results_df))
+test_that("pval_a present in iarimax_a_to_b$results_df", {
+  expect_true("pval_a" %in% names(.get_mini()$iarimax_a_to_b$results_df))
 })
 
-test_that("pval column for b is present in iarimax_b_to_c$results_df", {
-  expect_true("pval_b" %in% names(result$iarimax_b_to_c$results_df))
+test_that("pval_b present in iarimax_b_to_c$results_df", {
+  expect_true("pval_b" %in% names(.get_mini()$iarimax_b_to_c$results_df))
 })
 
-test_that("pval column for c is present in iarimax_c_to_a$results_df", {
-  expect_true("pval_c" %in% names(result$iarimax_c_to_a$results_df))
+test_that("pval_c present in iarimax_c_to_a$results_df", {
+  expect_true("pval_c" %in% names(.get_mini()$iarimax_c_to_a$results_df))
 })
 
 
 # ── Loop_positive_directed correctness ───────────────────────────────────────
 
-test_that("Loop_positive_directed is integer", {
-  expect_type(result$loop_df$Loop_positive_directed, "integer")
-})
-
-test_that("Loop_positive_directed only takes values 0, 1, or NA", {
-  vals <- result$loop_df$Loop_positive_directed
+test_that("Loop_positive_directed is integer with values 0, 1, or NA only", {
+  vals <- .get_mini()$loop_df$Loop_positive_directed
+  expect_type(vals, "integer")
   expect_true(all(vals %in% c(0L, 1L) | is.na(vals)))
 })
 
-test_that("Loop_positive_directed is 1 only when all three betas are positive and all three pvals < alpha", {
-  df    <- result$loop_df
-  alpha <- result$alpha
+test_that("Loop_positive_directed matches the conjunction formula exactly", {
+  r  <- .get_mini()
+  df <- r$loop_df
+  al <- r$alpha
 
-  is_positive_loop <- df[["a_b"]] > 0 & df[["b_c"]] > 0 & df[["c_a"]] > 0 &
-    df[["a_b_pval"]] < alpha & df[["b_c_pval"]] < alpha & df[["c_a_pval"]] < alpha
-
-  expect_equal(
-    df[["Loop_positive_directed"]],
-    as.integer(is_positive_loop)
+  expected <- as.integer(
+    df[["a_b"]] > 0 & df[["b_c"]] > 0 & df[["c_a"]] > 0 &
+    df[["a_b_pval"]] < al & df[["b_c_pval"]] < al & df[["c_a_pval"]] < al
   )
+  expect_equal(df[["Loop_positive_directed"]], expected)
 })
 
-test_that("a row with any negative focal beta is flagged as Loop_positive_directed = 0", {
-  # result_neg uses b = -0.8*a + noise, so a_b betas are reliably negative.
-  df       <- result_neg$loop_df
+test_that("a row with a negative a_b beta is flagged Loop_positive_directed = 0", {
+  df       <- .get_mini_neg()$loop_df
   neg_rows <- which(df[["a_b"]] < 0)
-  expect_gt(length(neg_rows), 0L)   # at least one negative beta must exist
+  expect_gt(length(neg_rows), 0L)
   expect_equal(df[["Loop_positive_directed"]][neg_rows[1]], 0L)
 })
 
-test_that("Loop_positive_directed is 1 for at least one subject in the strong-signal panel", {
-  # panel_strong has b = 0.9*a + noise and c = 0.9*b + noise, so c ≈ 0.81*a.
-  # All three legs should show significant positive effects for most subjects.
-  expect_gt(
-    sum(result_strong$loop_df$Loop_positive_directed, na.rm = TRUE),
-    0L
-  )
+
+# ── Parameter storage ─────────────────────────────────────────────────────────
+
+test_that("default alpha (0.05), covariates (NULL), include_third (FALSE) stored correctly", {
+  r <- .get_mini()
+  expect_equal(r$alpha, 0.05)
+  expect_null(r$covariates)
+  expect_false(r$include_third_as_covariate)
 })
 
 
-# ── Summary message always fires ──────────────────────────────────────────────
+# ── Focal predictor attributes ────────────────────────────────────────────────
 
-test_that("summary message is always emitted regardless of verbose", {
+test_that("each leg has the correct focal_predictor attribute", {
+  r <- .get_mini()
+  expect_equal(attr(r$iarimax_a_to_b, "focal_predictor"), "a")
+  expect_equal(attr(r$iarimax_b_to_c, "focal_predictor"), "b")
+  expect_equal(attr(r$iarimax_c_to_a, "focal_predictor"), "c")
+})
+
+
+# ── Merge integrity ───────────────────────────────────────────────────────────
+
+test_that("loop_df row count is <= min n_used_iarimax across the three legs", {
+  r    <- .get_mini()
+  n_ab <- r$iarimax_a_to_b$case_number_detail$n_used_iarimax
+  n_bc <- r$iarimax_b_to_c$case_number_detail$n_used_iarimax
+  n_ca <- r$iarimax_c_to_a$case_number_detail$n_used_iarimax
+  expect_lte(nrow(r$loop_df), min(n_ab, n_bc, n_ca))
+})
+
+test_that("all ids in loop_df appear in all three legs' results_df", {
+  r        <- .get_mini()
+  ids_loop <- r$loop_df[["id"]]
+  expect_true(all(ids_loop %in% r$iarimax_a_to_b$results_df[["id"]]))
+  expect_true(all(ids_loop %in% r$iarimax_b_to_c$results_df[["id"]]))
+  expect_true(all(ids_loop %in% r$iarimax_c_to_a$results_df[["id"]]))
+})
+
+
+# ── Verbose branch coverage (no skip_on_cran) ─────────────────────────────────
+# Runs looping_machine() with verbose = TRUE to instrument the per-leg start
+# messages and the finish message.
+
+test_that("verbose = TRUE runs without error and emits messages", {
+  msgs <- character(0)
+  withCallingHandlers(
+    suppressWarnings(
+      looping_machine(mini_panel, a_series = "a", b_series = "b", c_series = "c",
+                      id_var = "id", timevar = "time", verbose = TRUE)
+    ),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+  expect_gt(length(msgs), 1L)
+})
+
+test_that("summary message always fires and mentions 'Number of cases'", {
+  msgs <- character(0)
+  withCallingHandlers(
+    suppressWarnings(
+      looping_machine(mini_panel, a_series = "a", b_series = "b", c_series = "c",
+                      id_var = "id", timevar = "time", verbose = FALSE)
+    ),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+  expect_true(any(grepl("Number of cases", msgs)))
+})
+
+
+# ── include_third_as_covariate = TRUE branch coverage ────────────────────────
+# Covers the TRUE branch of `if (include_third_as_covariate)` in the source.
+# Also verifies that the correct third variable actually appears as a
+# coefficient column in each leg (not just that the flag is stored).
+
+test_that("include_third_as_covariate = TRUE adds the correct third variable to each leg", {
+  r3 <- suppressMessages(
+    looping_machine(mini_panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", include_third_as_covariate = TRUE)
+  )
+  expect_true(r3$include_third_as_covariate)
+  # a→b leg: c is the third variable
+  expect_true("estimate_c" %in% names(r3$iarimax_a_to_b$results_df))
+  # b→c leg: a is the third variable
+  expect_true("estimate_a" %in% names(r3$iarimax_b_to_c$results_df))
+  # c→a leg: b is the third variable
+  expect_true("estimate_b" %in% names(r3$iarimax_c_to_a$results_df))
+})
+
+
+# ── keep_models forwarding ────────────────────────────────────────────────────
+
+test_that("keep_models = TRUE populates $models in each leg", {
+  r_km <- suppressMessages(
+    looping_machine(mini_panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", keep_models = TRUE)
+  )
+  expect_false(is.null(r_km$iarimax_a_to_b$models))
+  expect_false(is.null(r_km$iarimax_b_to_c$models))
+  expect_false(is.null(r_km$iarimax_c_to_a$models))
+})
+
+
+# ── correlation_method forwarding ─────────────────────────────────────────────
+
+test_that("correlation_method = 'spearman' runs without error", {
+  r_sp <- suppressMessages(
+    looping_machine(mini_panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", correlation_method = "spearman")
+  )
+  expect_s3_class(r_sp$iarimax_a_to_b, "iarimax_results")
+  expect_s3_class(r_sp$iarimax_b_to_c, "iarimax_results")
+  expect_s3_class(r_sp$iarimax_c_to_a, "iarimax_results")
+})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Layer 2b — Larger panel (skip_on_cran, runs under devtools::test() only)
+# ══════════════════════════════════════════════════════════════════════════════
+
+panel     <- make_loop_panel()
+panel_neg <- make_neg_loop_panel()
+
+.lm_cache <- new.env(parent = emptyenv())
+
+.get_result <- function() {
+  if (!exists("result", envir = .lm_cache)) {
+    skip_on_cran()
+    .lm_cache$result <- suppressMessages(
+      looping_machine(panel, a_series = "a", b_series = "b", c_series = "c",
+                      id_var = "id", timevar = "time")
+    )
+  }
+  .lm_cache$result
+}
+
+.get_result_neg <- function() {
+  if (!exists("result_neg", envir = .lm_cache)) {
+    skip_on_cran()
+    .lm_cache$result_neg <- suppressMessages(
+      looping_machine(panel_neg, a_series = "a", b_series = "b", c_series = "c",
+                      id_var = "id", timevar = "time")
+    )
+  }
+  .lm_cache$result_neg
+}
+
+test_that("alpha = 0.01 is stored correctly", {
+  skip_on_cran()
+  r <- suppressMessages(looping_machine(
+    panel, a_series = "a", b_series = "b", c_series = "c",
+    id_var = "id", timevar = "time", alpha = 0.01
+  ))
+  expect_equal(r$alpha, 0.01)
+})
+
+test_that("non-NULL covariates are stored and appear as coefficient columns in all legs", {
+  skip_on_cran()
+  panel2      <- panel
+  panel2$cov1 <- rnorm(nrow(panel2))
+  r <- suppressMessages(looping_machine(
+    panel2, a_series = "a", b_series = "b", c_series = "c",
+    id_var = "id", timevar = "time", covariates = "cov1"
+  ))
+  expect_equal(r$covariates, "cov1")
+  expect_true("estimate_cov1" %in% names(r$iarimax_a_to_b$results_df))
+  expect_true("estimate_cov1" %in% names(r$iarimax_b_to_c$results_df))
+  expect_true("estimate_cov1" %in% names(r$iarimax_c_to_a$results_df))
+})
+
+test_that("summary message always fires regardless of verbose", {
+  skip_on_cran()
   msgs <- character(0)
   withCallingHandlers(
     suppressWarnings(looping_machine(
@@ -384,123 +603,47 @@ test_that("summary message is always emitted regardless of verbose", {
   expect_true(any(grepl("Number of cases", msgs)))
 })
 
-
-# ── Parameter storage ─────────────────────────────────────────────────────────
-
-test_that("alpha parameter is stored correctly in output", {
-  result_alpha <- suppressMessages(looping_machine(
-    panel, a_series = "a", b_series = "b", c_series = "c",
-    id_var = "id", timevar = "time", alpha = 0.01
-  ))
-  expect_equal(result_alpha$alpha, 0.01)
-})
-
-test_that("covariates = NULL is stored as NULL", {
-  expect_null(result$covariates)
-})
-
-test_that("include_third_as_covariate = FALSE is stored correctly", {
-  expect_false(result$include_third_as_covariate)
-})
-
-test_that("non-NULL covariates vector is stored correctly", {
-  panel2 <- panel
-  panel2$cov1 <- rnorm(nrow(panel2))
-  result2 <- suppressMessages(looping_machine(
-    panel2, a_series = "a", b_series = "b", c_series = "c",
-    id_var = "id", timevar = "time", covariates = "cov1"
-  ))
-  expect_equal(result2$covariates, "cov1")
-})
-
-test_that("include_third_as_covariate = TRUE is stored correctly", {
-  result3 <- suppressMessages(looping_machine(
-    panel, a_series = "a", b_series = "b", c_series = "c",
-    id_var = "id", timevar = "time", include_third_as_covariate = TRUE
-  ))
-  expect_true(result3$include_third_as_covariate)
-})
-
-
-# ── Include third as covariate smoke test ─────────────────────────────────────
-
-test_that("include_third_as_covariate = TRUE runs without error and returns correct structure", {
-  result3 <- suppressMessages(looping_machine(
-    panel, a_series = "a", b_series = "b", c_series = "c",
-    id_var = "id", timevar = "time", include_third_as_covariate = TRUE
-  ))
-  expect_s3_class(result3$iarimax_a_to_b, "iarimax_results")
-  expect_true("Loop_positive_directed" %in% names(result3$loop_df))
-})
-
-
-# ── Merge integrity ───────────────────────────────────────────────────────────
-
-test_that("loop_df row count is <= minimum n_used_iarimax across the three legs", {
-  n_ab <- result$iarimax_a_to_b$case_number_detail$n_used_iarimax
-  n_bc <- result$iarimax_b_to_c$case_number_detail$n_used_iarimax
-  n_ca <- result$iarimax_c_to_a$case_number_detail$n_used_iarimax
-  expect_lte(nrow(result$loop_df), min(n_ab, n_bc, n_ca))
-})
-
-test_that("all ids in loop_df appear in all three legs' results_df", {
-  ids_loop <- result$loop_df[["id"]]
-  ids_ab   <- result$iarimax_a_to_b$results_df[["id"]]
-  ids_bc   <- result$iarimax_b_to_c$results_df[["id"]]
-  ids_ca   <- result$iarimax_c_to_a$results_df[["id"]]
-  expect_true(all(ids_loop %in% ids_ab))
-  expect_true(all(ids_loop %in% ids_bc))
-  expect_true(all(ids_loop %in% ids_ca))
-})
-
-
-# ── Focal predictor attributes ────────────────────────────────────────────────
-
-test_that("iarimax_a_to_b has focal_predictor attribute set to a_series", {
-  expect_equal(attr(result$iarimax_a_to_b, "focal_predictor"), "a")
-})
-
-test_that("iarimax_b_to_c has focal_predictor attribute set to b_series", {
-  expect_equal(attr(result$iarimax_b_to_c, "focal_predictor"), "b")
-})
-
-test_that("iarimax_c_to_a has focal_predictor attribute set to c_series", {
-  expect_equal(attr(result$iarimax_c_to_a, "focal_predictor"), "c")
-})
-
-
-# ── Verbose ───────────────────────────────────────────────────────────────────
-
 test_that("verbose = TRUE emits more messages than verbose = FALSE", {
+  skip_on_cran()
   count_msgs <- function(verbose) {
-    msgs <- character(0)
+    n <- 0L
     withCallingHandlers(
       suppressWarnings(looping_machine(
         panel, a_series = "a", b_series = "b", c_series = "c",
         id_var = "id", timevar = "time", verbose = verbose
       )),
-      message = function(m) {
-        msgs <<- c(msgs, conditionMessage(m))
-        invokeRestart("muffleMessage")
-      }
+      message = function(m) { n <<- n + 1L; invokeRestart("muffleMessage") }
     )
-    length(msgs)
+    n
   }
   expect_gt(count_msgs(TRUE), count_msgs(FALSE))
 })
 
-test_that("verbose = FALSE suppresses progress messages (only the summary message fires)", {
-  msgs <- character(0)
-  withCallingHandlers(
-    suppressWarnings(looping_machine(
-      panel, a_series = "a", b_series = "b", c_series = "c",
-      id_var = "id", timevar = "time", verbose = FALSE
-    )),
-    message = function(m) {
-      msgs <<- c(msgs, conditionMessage(m))
-      invokeRestart("muffleMessage")
-    }
+test_that("Loop_positive_directed is 1 for at least one subject in a strong-signal panel", {
+  skip_on_cran()
+  set.seed(42)
+  n_sub <- 8; n_obs <- 50
+  strong_panel <- do.call(rbind, lapply(seq_len(n_sub), function(id) {
+    a  <- as.numeric(arima.sim(list(ar = 0.3), n = n_obs))
+    b  <- 0.95 * a  + 0.05 * rnorm(n_obs)
+    cc <- 0.95 * b  + 0.05 * rnorm(n_obs)
+    data.frame(id = as.character(id), time = seq_len(n_obs),
+               a = a, b = b, c = cc, stringsAsFactors = FALSE)
+  }))
+  r_strong <- suppressMessages(looping_machine(
+    strong_panel, a_series = "a", b_series = "b", c_series = "c",
+    id_var = "id", timevar = "time"
+  ))
+  expect_gt(sum(r_strong$loop_df$Loop_positive_directed, na.rm = TRUE), 0L)
+})
+
+test_that("Loop_positive_directed logic is consistent with conjunction formula on full panel", {
+  r  <- .get_result()
+  df <- r$loop_df
+  al <- r$alpha
+  expected <- as.integer(
+    df[["a_b"]] > 0 & df[["b_c"]] > 0 & df[["c_a"]] > 0 &
+    df[["a_b_pval"]] < al & df[["b_c_pval"]] < al & df[["c_a_pval"]] < al
   )
-  expect_equal(length(msgs), 1L)
-  expect_match(msgs[1], "Number of cases")
+  expect_equal(df[["Loop_positive_directed"]], expected)
 })

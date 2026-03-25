@@ -80,3 +80,23 @@ level. Check the ARIMA orders in each leg's \code{results_df} before
 interpreting the sign of \code{Loop_positive_directed}.
 }
 
+\examples{
+\donttest{
+# Build a panel with three correlated variables
+set.seed(7)
+panel <- do.call(rbind, lapply(1:6, function(id) {
+  a <- rnorm(30)
+  b <- 0.4 * a + rnorm(30)
+  c <- 0.4 * b + rnorm(30)
+  data.frame(id = as.character(id), time = seq_len(30),
+             a = a, b = b, c = c, stringsAsFactors = FALSE)
+}))
+
+loop_result <- looping_machine(panel,
+                               a_series = "a", b_series = "b", c_series = "c",
+                               id_var   = "id", timevar  = "time")
+
+# Proportion of subjects with a detected positive directed loop
+mean(loop_result$loop_df$Loop_positive_directed, na.rm = TRUE)
+}
+}

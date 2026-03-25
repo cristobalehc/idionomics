@@ -30,8 +30,29 @@
 #' If you plan to pass output to [iarimax()], those subjects will be filtered
 #' out by its `minvar` threshold.
 #'
-#' @returns A dataframe with new `<col>_psd` columns containing the
+#' @return A dataframe with new `<col>_psd` columns containing the
 #'   within-person z-scores.
+#'
+#' @examples
+#' # Build a small panel: 3 subjects, 10 observations each
+#' set.seed(1)
+#' panel <- do.call(rbind, lapply(1:3, function(id) {
+#'   data.frame(
+#'     id   = as.character(id),
+#'     time = seq_len(10),
+#'     x    = rnorm(10, mean = id * 2),  # different person-means
+#'     y    = rnorm(10),
+#'     stringsAsFactors = FALSE
+#'   )
+#' }))
+#'
+#' # Standardize x and y within each person (append = TRUE, the default)
+#' result <- pmstandardize(panel, cols = c("x", "y"), idvar = "id")
+#' head(result)  # original columns + x_psd + y_psd
+#'
+#' # Return only the ID and standardized columns
+#' result_slim <- pmstandardize(panel, cols = "x", idvar = "id", append = FALSE)
+#' head(result_slim)
 
 pmstandardize <- function(df, cols, idvar, verbose = FALSE, append = TRUE) {
 
@@ -52,7 +73,7 @@ pmstandardize <- function(df, cols, idvar, verbose = FALSE, append = TRUE) {
   df <- dplyr::ungroup(df)
 
   # Provide explanation, conditional to verbose = TRUE.
-  if (verbose == TRUE) {
+  if (verbose) {
     message('This function creates within-person z-scores (person-level standardization).', "\n")
     message('   If all values for a feature within ID are NA, returns NA.', "\n")
     message('   If fewer than 2 non-NA values exist, returns 0 (SD undefined).', "\n")
@@ -79,7 +100,7 @@ pmstandardize <- function(df, cols, idvar, verbose = FALSE, append = TRUE) {
     dplyr::ungroup()
 
   # IF append == TRUE, return the original dataframe with new standardized columns appended.
-  if (append == TRUE) {
+  if (append) {
     return(df)
   }
 

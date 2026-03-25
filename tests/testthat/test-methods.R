@@ -85,6 +85,29 @@ test_that("summary.sden_results output contains 'Manual' for manual selection", 
   expect_output(summary(r), regexp = "Manual")
 })
 
+test_that("summary.sden_results auto + SDT counter-positive prints correct explanation", {
+  # Exercises lines 228-231 in summary.sden_results: auto selection with a
+  # positive-and-significant pooled effect.
+  r <- make_fake_sden_result(test_type = "SDT counter-positive",
+                             selection_mechanism = "auto",
+                             rema_beta = 0.5, rema_pval = 0.02,
+                             sig_effects = 1L, pnull = 0.025)
+  expect_output(summary(r), regexp = "positive")
+  expect_output(summary(r), regexp = "Automatic")
+})
+
+test_that("summary.sden_results auto + SDT counter-negative prints correct explanation and hypothesis", {
+  # Exercises lines 231-234 (explanation) and lines 248-250 (hypothesis) in
+  # summary.sden_results: auto selection with a negative-and-significant effect.
+  r <- make_fake_sden_result(test_type = "SDT counter-negative",
+                             selection_mechanism = "auto",
+                             rema_beta = -0.5, rema_pval = 0.02,
+                             sig_effects = 3L, pnull = 0.025)
+  expect_output(summary(r), regexp = "negative")
+  expect_output(summary(r), regexp = "Automatic")
+  expect_output(summary(r), regexp = "positive significant")
+})
+
 # ── Helpers for iarimax_results S3 methods ────────────────────────────────────
 
 make_fake_iarimax <- function(with_meta = TRUE) {
@@ -182,6 +205,14 @@ test_that("summary.iarimax_results respects custom alpha argument", {
 test_that("plot.iarimax_results errors on unknown feature naming the bad variable", {
   r <- make_fake_iarimax()
   expect_error(plot(r, feature = "not_a_feature"), regexp = "not_a_feature")
+})
+
+test_that("plot.iarimax_results works for a non-focal feature present in results_df", {
+  skip_if_not_installed("ggplot2")
+  r <- make_fake_iarimax()
+  r$results_df$estimate_z     <- c(0.1, -0.2, 0.3, 0.0)
+  r$results_df[["std.error_z"]] <- c(0.05, 0.06, 0.07, 0.04)
+  expect_s3_class(plot(r, feature = "z"), "ggplot")
 })
 
 # ── summary.iarimax_results + plot.iarimax_results: Layer 2 (real iarimax) ───

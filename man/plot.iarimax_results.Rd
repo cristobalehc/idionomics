@@ -37,3 +37,17 @@ A ggplot2 object.
 \description{
 Caterpillar plot method for iarimax_results objects.
 }
+\examples{
+\donttest{
+set.seed(1)
+panel <- do.call(rbind, lapply(1:6, function(id) {
+  x <- rnorm(30)
+  data.frame(id = as.character(id), time = seq_len(30),
+             x = x, y = 0.5 * x + rnorm(30), stringsAsFactors = FALSE)
+}))
+result <- iarimax(panel, y_series = "y", x_series = "x",
+                  id_var = "id", timevar = "time")
+plot(result)
+plot(result, y_series_name = "Mood", x_series_name = "Stress")
+}
+}

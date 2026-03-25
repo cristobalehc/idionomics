@@ -21,9 +21,16 @@ iarimax(
 \arguments{
 \item{dataframe}{Your dataframe.}
 
-\item{min_n_subject}{The minimum number of non NA cases to run the analyses. It will filter cases with more NA's than the threshold. Defaults to 20.}
+\item{min_n_subject}{Integer. Subjects with fewer than \code{min_n_subject}
+pairwise-complete observations (across \code{y_series} and all
+\code{x_series}) are excluded. The threshold is inclusive (\code{>=}).
+\code{n_valid} is extracted directly from the fitted Arima object via
+\code{stats::nobs()} and might be smaller than \code{min_n_subject} if
+\code{auto.arima()} applies differencing. Defaults to 20.}
 
-\item{minvar}{The minimum variance for both series (&) to include a case. Defaults to 0.01.}
+\item{minvar}{Numeric. Each series (\code{y_series} and every variable in
+\code{x_series}) must have variance \code{>= minvar}; subjects failing
+this for any series are excluded. Defaults to 0.01.}
 
 \item{y_series}{A string containing the name of your dependent variable y.}
 
@@ -33,7 +40,9 @@ iarimax(
 
 \item{id_var}{A string containing your id variable.}
 
-\item{timevar}{Required to arrange timeseries.}
+\item{timevar}{A string naming the column used to sort observations into
+chronological order within each subject. Must be complete (no missing
+values).}
 
 \item{correlation_method}{Select method for raw correlations. Options are: 'spearman', 'pearson' or 'kendall'. Defaults to 'pearson'.}
 
@@ -42,8 +51,62 @@ iarimax(
 \item{verbose}{If TRUE, prints progress messages during filtering and model fitting. Defaults to FALSE.}
 }
 \value{
-A list containing a dataframe with the ARIMA parameters, plus the xreg parameters (the beta values for your x_series) together with their std.errors, and a random effects meta analysis on the focal predictor.
+An S3 object of class \code{iarimax_results} (a named list) with:
+\describe{
+\item{results_df}{Per-subject data frame with ARIMA orders (\code{nAR},
+\code{nI}, \code{nMA}), coefficient estimates
+(\code{estimate_<feature>}), standard errors
+(\code{std.error_<feature>}), \code{n_valid} (effective n extracted
+from the fitted Arima object via \code{stats::nobs()}),
+\code{n_params} (number of model coefficients), and \code{raw_cor}
+(pairwise correlation between the focal predictor and
+\code{y_series}, not partialled for other predictors in
+\code{x_series}). Subjects
+whose \code{auto.arima()} call failed appear as rows of \code{NA}s;
+their IDs are also listed in
+\code{case_number_detail$error_arimax_skipped}.}
+\item{meta_analysis}{A \code{metafor::rma} object from a random-effects
+meta-analysis on the focal predictor coefficients, or \code{NULL} if
+the meta-analysis failed (e.g. fewer than two valid estimates).}
+\item{case_number_detail}{A list with \code{n_original_df} (total unique
+subjects in the input), \code{n_filtered_out} (excluded by variance or
+n thresholds), \code{error_arimax_skipped} (character vector of IDs
+whose \code{auto.arima()} call failed), and \code{n_used_iarimax}
+(subjects with a valid fitted model). The four quantities satisfy:
+\code{n_original_df == n_filtered_out + length(error_arimax_skipped) +
+    n_used_iarimax}.}
+\item{models}{A named list of raw \code{Arima} objects (one per subject,
+\code{NULL} for failed fits) if \code{keep_models = TRUE}, otherwise
+\code{NULL}.}
+}
+Attributes: \code{outcome} (the \code{y_series} name),
+\code{focal_predictor}, \code{id_var}, \code{timevar}.
 }
 \description{
 Run I-ARIMAX algorithm.
+}
+\examples{
+\donttest{
+# Build a small synthetic panel: 6 subjects, 30 observations each
+set.seed(42)
+panel <- do.call(rbind, lapply(1:6, function(id) {
+  x <- rnorm(30)
+  data.frame(
+    id   = as.character(id),
+    time = seq_len(30),
+    x    = x,
+    y    = 0.5 * x + rnorm(30),
+    stringsAsFactors = FALSE
+  )
+}))
+
+result <- iarimax(panel,
+                  y_series  = "y",
+                  x_series  = "x",
+                  id_var    = "id",
+                  timevar   = "time")
+
+summary(result)
+plot(result)
+}
 }

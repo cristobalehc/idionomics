@@ -13,7 +13,30 @@ i_pval(iarimax_object, feature = NULL)
 }
 \value{
 Returns an updated version of results_df within the iarimax_object with p-values for the specific feature.
+p-values use ML-based degrees of freedom (n_valid - n_params), not the OLS formula, and will differ
+from \code{lm()} even for an ARIMA(0,0,0) model. If both estimate and SE are exactly zero,
+the p-value is set to \code{NA} (not \code{NaN}).
 }
 \description{
 Case by case p-value calculation based on t-distribution.
+}
+\examples{
+\donttest{
+# Fit I-ARIMAX on a small synthetic panel
+set.seed(1)
+panel <- do.call(rbind, lapply(1:4, function(id) {
+  x <- rnorm(30)
+  data.frame(id = as.character(id), time = seq_len(30),
+             x = x, y = 0.5 * x + rnorm(30),
+             stringsAsFactors = FALSE)
+}))
+
+result <- iarimax(panel, y_series = "y", x_series = "x",
+                  id_var = "id", timevar = "time",
+                  min_n_subject = 20)
+
+# Add per-subject p-values for the focal predictor x
+result_pval <- i_pval(result)
+result_pval$results_df[, c("id", "estimate_x", "pval_x")]
+}
 }
