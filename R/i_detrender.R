@@ -17,8 +17,8 @@
 #' @param verbose If `TRUE`, prints a description of the detrending rules.
 #'   Defaults to `FALSE`.
 #' @param append If `TRUE` (default), returns the original dataframe with new
-#'   `<col>_DT` columns appended. If `FALSE`, returns only the ID column, the
-#'   time variable, and the new `_DT` columns.
+#'   `<col>_dt` columns appended. If `FALSE`, returns only the ID column, the
+#'   time variable, and the new `_dt` columns.
 #'
 #' @details
 #' For each subject x column combination, the following rules are applied in
@@ -33,7 +33,7 @@
 #'
 #' The thresholds `min_n_subject` and `minvar` share the same defaults as
 #' [iarimax()], but filtering here is applied **per column independently**:
-#' a subject can receive `NA` in one `_DT` column while still producing valid
+#' a subject can receive `NA` in one `_dt` column while still producing valid
 #' residuals in another. This differs from [iarimax()], which applies a joint
 #' AND filter — a subject is excluded if *any* series fails the thresholds.
 #' The per-column design is intentional: it avoids unnecessary data loss and
@@ -44,7 +44,7 @@
 #' person-mean standardization and allow them to slip through [iarimax()]'s
 #' filters.
 #'
-#' @return A dataframe with new `<col>_DT` columns containing the
+#' @return A dataframe with new `<col>_dt` columns containing the
 #'   within-person linear-detrended residuals.
 #'
 #' @examples
@@ -59,7 +59,7 @@
 #'   )
 #' }))
 #'
-#' # Detrend x within each person (returns original df + x_DT)
+#' # Detrend x within each person (returns original df + x_dt)
 #' result <- i_detrender(panel, cols = "x", idvar = "id", timevar = "time")
 #' head(result)
 #'

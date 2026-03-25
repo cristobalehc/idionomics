@@ -38,11 +38,11 @@ output. Mirrors the threshold used in \code{\link[=iarimax]{iarimax()}}. Default
 Defaults to \code{FALSE}.}
 
 \item{append}{If \code{TRUE} (default), returns the original dataframe with new
-\verb{<col>_DT} columns appended. If \code{FALSE}, returns only the ID column, the
-time variable, and the new \verb{_DT} columns.}
+\verb{<col>_dt} columns appended. If \code{FALSE}, returns only the ID column, the
+time variable, and the new \verb{_dt} columns.}
 }
 \value{
-A dataframe with new \verb{<col>_DT} columns containing the
+A dataframe with new \verb{<col>_dt} columns containing the
 within-person linear-detrended residuals.
 }
 \description{
@@ -62,7 +62,7 @@ returns \code{NA}.
 
 The thresholds \code{min_n_subject} and \code{minvar} share the same defaults as
 \code{\link[=iarimax]{iarimax()}}, but filtering here is applied \strong{per column independently}:
-a subject can receive \code{NA} in one \verb{_DT} column while still producing valid
+a subject can receive \code{NA} in one \verb{_dt} column while still producing valid
 residuals in another. This differs from \code{\link[=iarimax]{iarimax()}}, which applies a joint
 AND filter — a subject is excluded if \emph{any} series fails the thresholds.
 The per-column design is intentional: it avoids unnecessary data loss and
@@ -85,7 +85,7 @@ panel <- do.call(rbind, lapply(1:3, function(id) {
   )
 }))
 
-# Detrend x within each person (returns original df + x_DT)
+# Detrend x within each person (returns original df + x_dt)
 result <- i_detrender(panel, cols = "x", idvar = "id", timevar = "time")
 head(result)
 

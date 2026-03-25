@@ -83,7 +83,7 @@ i_detrender(df, cols, idvar, timevar,
             verbose = FALSE, append = TRUE)
 ```
 
-Fits `lm(col ~ time)` within each subject and replaces the column with the residuals (`<col>_DT`). Subjects with too few observations, insufficient pre-detrend variance, or near-zero post-detrend variance receive `NA` — independently for each column.
+Fits `lm(col ~ time)` within each subject and replaces the column with the residuals (`<col>_dt`). Subjects with too few observations, insufficient pre-detrend variance, or near-zero post-detrend variance receive `NA` — independently for each column.
 
 ```r
 panel_dt <- i_detrender(panel_std, cols = c("x_psd", "y_psd"),
@@ -107,8 +107,8 @@ Fits one `auto.arima()` model per subject, extracts coefficients via `broom::tid
 
 ```r
 result <- iarimax(panel_dt,
-                  y_series  = "y_psd_DT",
-                  x_series  = "x_psd_DT",
+                  y_series  = "y_psd_dt",
+                  x_series  = "x_psd_dt",
                   id_var    = "id",
                   timevar   = "time")
 
@@ -137,7 +137,7 @@ Attaches a `pval_<feature>` column to `results_df` using the two-tailed t-distri
 
 ```r
 result_pval <- i_pval(result)
-result_pval$results_df[, c("id", "estimate_x_psd_DT", "pval_x_psd_DT")]
+result_pval$results_df[, c("id", "estimate_x_psd_dt", "pval_x_psd_dt")]
 ```
 
 ---
@@ -225,7 +225,7 @@ panel_dt <- i_detrender(panel_std, cols = c("x_psd", "y_psd"),
 
 # Step 3: I-ARIMAX
 result <- iarimax(panel_dt,
-                  y_series = "y_psd_DT", x_series = "x_psd_DT",
+                  y_series = "y_psd_dt", x_series = "x_psd_dt",
                   id_var = "id", timevar = "time")
 
 # Step 4: Summary and plot
