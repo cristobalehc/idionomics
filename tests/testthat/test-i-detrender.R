@@ -297,16 +297,44 @@ test_that("NA values within an otherwise-varying series are preserved as NA in _
   expect_false(any(is.na(result$x_DT[-1])))   # other positions filled
 })
 
+test_that("scattered interior NAs are preserved at correct positions in _DT", {
+  set.seed(99)
+  x_raw        <- rnorm(25)
+  x_raw[c(5, 12, 20)] <- NA
+  df <- data.frame(id = "A", time = seq_len(25), x = x_raw,
+                   stringsAsFactors = FALSE)
+  result <- i_detrender(df, cols = "x", idvar = "id", timevar = "time")
+  expect_true(all(is.na(result$x_DT[c(5, 12, 20)])))
+  expect_false(any(is.na(result$x_DT[-c(5, 12, 20)])))
+})
+
+test_that("all-NA subject with min_n_subject = 0 still produces all-NA output", {
+  df <- data.frame(id = "allna", time = seq_len(25),
+                   x  = rep(NA_real_, 25), stringsAsFactors = FALSE)
+  result <- i_detrender(df, cols = "x", idvar = "id", timevar = "time",
+                        min_n_subject = 0)
+  expect_true(all(is.na(result$x_DT)))
+})
+
+test_that("append = FALSE preserves rows for filtered-out subjects as NA", {
+  df     <- make_det_df()
+  result <- i_detrender(df, cols = "x", idvar = "id", timevar = "time",
+                        append = FALSE)
+  expect_equal(nrow(result), nrow(df))
+  expect_true(all(is.na(result$x_DT[result$id == "no_var"])))
+})
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Verbose
 # ══════════════════════════════════════════════════════════════════════════════
 
 test_that("verbose = TRUE emits messages", {
-  df <- make_det_df()
-  expect_message(
+  df   <- make_det_df()
+  msgs <- capture_messages(
     i_detrender(df, cols = "x", idvar = "id", timevar = "time", verbose = TRUE)
   )
+  expect_gt(length(msgs), 0)
 })
 
 test_that("verbose = FALSE emits no messages", {
@@ -317,9 +345,9 @@ test_that("verbose = FALSE emits no messages", {
 })
 
 test_that("verbose message mentions detrend", {
-  df <- make_det_df()
-  expect_message(
-    i_detrender(df, cols = "x", idvar = "id", timevar = "time", verbose = TRUE),
-    regexp = "(?i)detrend"
+  df   <- make_det_df()
+  msgs <- capture_messages(
+    i_detrender(df, cols = "x", idvar = "id", timevar = "time", verbose = TRUE)
   )
+  expect_true(any(grepl("(?i)detrend", msgs, perl = TRUE)))
 })
