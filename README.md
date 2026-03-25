@@ -1,6 +1,6 @@
 # idionomicsv2
 
-**idionomicsv2** is an R toolkit for **idionomic science** — a research paradigm that places the individual at the center of analysis. Rather than fitting a single model to the group and treating between-person averages as the primary finding, idionomic methods model each person separately, then aggregate upward. The group-level picture emerges from individual results, not the other way around.
+**idionomicsv2** is an R toolkit for **idionomic science** — a research philosophy that places the individual at the center of analysis. Rather than fitting a single model to the group and treating between-person averages as the primary finding, idionomic methods model each person separately, then aggregate upward. The group-level picture emerges from individual results, not the other way around.
 
 The package is built around intensive longitudinal data (ILD): experience-sampling, ecological momentary assessment, daily diary, wearable sensor streams, and similar designs where each participant contributes a time series. It provides the full pipeline from preprocessing through modeling to population-level inference.
 
@@ -8,27 +8,15 @@ The package is built around intensive longitudinal data (ILD): experience-sampli
 
 ## The idionomic science principle
 
-Classical panel data methods (multilevel models, fixed-effects regression) estimate one set of parameters shared — or partially shared — across all subjects. This is powerful for average effects, but it systematically obscures individual differences and can produce ecological fallacies: an average positive effect may coexist with a majority of individuals for whom the effect is negative, zero, or present only under specific temporal conditions.
+Classical panel data methods (multilevel models, fixed-effects regression) estimate one set of parameters shared — or partially shared — across all subjects. If the focus of interest is the trajectory of individuals, this is only sensible under hard to meet assumptions such as exchangeability and/or ergodicity. If these assumptions are not met, ensemble averages may systematically obscure individual differences and can produce ecological fallacies: an average positive effect may coexist with a majority of individuals for whom the effect is negative, zero, or present only under specific temporal conditions.
 
 Idionomic science inverts the order of operations:
 
 1. **Individual first.** Fit a model to each person's time series independently, capturing that person's unique dynamics, autocorrelation structure, and effect sizes.
-2. **Group later.** Aggregate the individual estimates with meta-analytic methods that explicitly represent and quantify heterogeneity across people.
+2. **Group later.** Aggregate the individual estimates with meta-analytic, unsupervised clustering or estimate-based methods that explicitly represent and quantify heterogeneity across people.
 
 This preserves the individual's data structure, produces person-specific estimates that can be reported back to participants or used for personalized intervention, and provides honest population-level summaries that distinguish "the average effect is X" from "most people show effect X."
 
----
-
-## Installation
-
-```r
-# Install from a local source directory (development version)
-install.packages("devtools")
-devtools::install("/path/to/idionomicsv2")
-
-# Or install directly from GitHub:
-devtools::install_github("cristobalehc/idionomics")
-```
 
 ---
 
