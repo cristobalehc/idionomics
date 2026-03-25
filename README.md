@@ -39,13 +39,12 @@ devtools::install_github("cristobalehc/idionomics")
 pmstandardize()   →   i_detrender()   →   iarimax()   →   i_pval() / sden_test()
 ```
 
-1. **`pmstandardize()`** — within-person z-scoring. Removes between-person differences in mean and variance so coefficients are comparable across subjects.
-2. **`i_detrender()`** — linear detrending. Removes the linear time trend within each subject and each variable independently, so that a spurious trend does not inflate the association estimate.
+1. **`pmstandardize()` [optional]** — within-person z-scoring. Removes between-person differences in mean and variance so coefficients are comparable across subjects.
+2. **`i_detrender()` [optional]** — linear detrending. Removes the linear time trend within each subject and each variable independently, to reduce the differencing order auto.arima selects, among other uses.  
 3. **`iarimax()`** — per-subject ARIMAX fitting and random-effects meta-analysis.
 4. **`i_pval()`** — attaches per-subject p-values based on ML-consistent degrees of freedom.
 5. **`sden_test()`** — Sign Divergence / Equisyncratic Null test: a binomial test on the count of significant individual-level effects.
 
-> **Order matters.** Always standardize before detrending. If you detrend first and then standardize, near-zero residuals divided by a near-zero SD get rescaled to apparent unit variance, bypassing `iarimax()`'s variance filter and inflating coefficients.
 
 ---
 
