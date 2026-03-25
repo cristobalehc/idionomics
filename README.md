@@ -2,7 +2,7 @@
 
 **idionomics** is an R toolkit for **idionomic science** — a research philosophy that places the individual at the center of analysis. Rather than fitting a single model to the group and treating between-person averages as the primary finding, idionomic methods model each person separately, then aggregate upward. The group-level picture emerges from individual results, not the other way around.
 
-The package is built around intensive longitudinal data (ILD): experience-sampling, ecological momentary assessment, daily diary, wearable sensor streams, and similar designs where each participant contributes a time series. It provides the full pipeline from preprocessing through modeling to population-level inference.
+The package is built around intensive longitudinal data (ILD): experience-sampling, ecological momentary assessment, daily diary, wearable sensor streams, and similar designs where each participant contributes a time series. It provides a pipeline from preprocessing through modeling to group-level summaries.
 
 ---
 
@@ -15,7 +15,7 @@ Idionomic science inverts the order of operations:
 1. **Individual first.** Fit a model to each person's time series independently, capturing that person's unique dynamics, autocorrelation structure, and effect sizes.
 2. **Group later.** Aggregate the individual estimates with meta-analytic, unsupervised clustering or estimate-based methods that explicitly represent and quantify heterogeneity across people.
 
-This preserves the individual's data structure, produces person-specific estimates that can be reported back to participants or used for personalized intervention, and provides honest group-level summaries that distinguish "the average effect is X" from "most people show effect X", "the average effect is null but there are significant effects at both sides", and similar patterns that a single pooled estimate would erase.
+This preserves the individual's data structure, produces person-specific estimates that can be reported back to participants or explored as a basis for personalized intervention, and provides honest group-level summaries that distinguish "the average effect is X" from "most people show effect X", "the average effect is null but there are significant effects at both sides", and similar patterns that a single pooled estimate would erase.
 
 
 ---
@@ -251,6 +251,14 @@ summary(sden)
 | `broom` | `tidy()` — coefficient extraction from Arima objects |
 | `ggplot2`, `forcats` | Caterpillar plot |
 | `dplyr`, `tidyr`, `tibble`, `rlang` | Data manipulation |
+
+---
+
+## Disclaimer
+
+**idionomics** is free, open-source software provided "as-is", without warranty of any kind — express or implied — under the [MIT License](LICENSE.md). The authors are not liable for any damages or losses arising from the use of this software.
+
+Statistical software can produce results that are technically valid but analytically inappropriate for a given context. Users are encouraged to review the methods and code, inspect their data, and exercise independent statistical judgment before reporting findings.
 
 ---
 
