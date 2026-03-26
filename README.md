@@ -36,10 +36,10 @@ devtools::install_github("cristobalehc/idionomics")
 ## Recommended analysis pipeline
 
 ```
-i_screen()   →   pmstandardize()   →   i_detrender()   →   iarimax()   →   i_pval() / sden_test()
+i_screener()   →   pmstandardize()   →   i_detrender()   →   iarimax()   →   i_pval() / sden_test()
 ```
 
-1. **`i_screen()` [optional]** — pre-pipeline data quality filter. Removes or flags subjects with too few observations, insufficient raw variance, or repetitive responses before standardization. Should run on raw data, before `pmstandardize()`.
+1. **`i_screener()` [optional]** — pre-pipeline data quality filter. Removes or flags subjects with too few observations, insufficient raw variance, or repetitive responses before standardization. Should run on raw data, before `pmstandardize()`.
 2. **`pmstandardize()` [optional]** — within-person z-scoring. Removes between-person differences in mean and variance so coefficients are comparable across subjects.
 3. **`i_detrender()` [optional]** — linear detrending. Removes the linear time trend within each subject and each variable independently, to reduce the differencing order auto.arima selects, among other uses.
 4. **`iarimax()`** — per-subject ARIMAX fitting and random-effects meta-analysis.
@@ -51,10 +51,10 @@ i_screen()   →   pmstandardize()   →   i_detrender()   →   iarimax()   →
 
 ## Function reference
 
-### `i_screen()` — Pre-pipeline data quality filter
+### `i_screener()` — Pre-pipeline data quality filter
 
 ```r
-i_screen(df, cols, idvar,
+i_screener(df, cols, idvar,
          min_n        = 20,
          min_sd       = NULL,
          max_mode_pct = NULL,
@@ -63,7 +63,7 @@ i_screen(df, cols, idvar,
          verbose      = FALSE)
 ```
 
-Screens subjects for data quality on raw (unstandardised) data before it enters the pipeline. After `pmstandardize()`, all non-constant series have within-person variance ≈ 1 by construction, making `iarimax()`'s `minvar` filter ineffective. Running `i_screen()` on raw data catches low-quality subjects at the right stage.
+Screens subjects for data quality on raw (unstandardised) data before it enters the pipeline. After `pmstandardize()`, all non-constant series have within-person variance ≈ 1 by construction, making `iarimax()`'s `minvar` filter ineffective. Running `i_screener()` on raw data catches low-quality subjects at the right stage.
 
 Three configurable criteria (all optional except `min_n`):
 
@@ -82,17 +82,17 @@ Three configurable criteria (all optional except `min_n`):
 
 ```r
 # Remove subjects with too few obs or low raw variance, before standardizing
-panel_clean <- i_screen(panel, cols = c("x", "y"), idvar = "id",
+panel_clean <- i_screener(panel, cols = c("x", "y"), idvar = "id",
                         min_n = 20, min_sd = 0.5)
 
 # Inspect quality without committing to removal
-report <- i_screen(panel, cols = c("x", "y"), idvar = "id",
+report <- i_screener(panel, cols = c("x", "y"), idvar = "id",
                    min_n = 20, min_sd = 0.5, max_mode_pct = 0.80,
                    mode = "report")
 print(report)
 
 # Flag subjects for inspection, then decide
-flagged <- i_screen(panel, cols = c("x", "y"), idvar = "id",
+flagged <- i_screener(panel, cols = c("x", "y"), idvar = "id",
                     min_sd = 0.5, mode = "flag")
 table(flagged$pass_screen)
 ```
@@ -266,7 +266,7 @@ panel <- do.call(rbind, lapply(1:10, function(id) {
 }))
 
 # Step 1: Quality screening on raw data (before standardization)
-panel_clean <- i_screen(panel, cols = c("x", "y"), idvar = "id",
+panel_clean <- i_screener(panel, cols = c("x", "y"), idvar = "id",
                         min_n = 20, min_sd = 0.3, max_mode_pct = 0.80)
 
 # Step 2: Within-person standardization

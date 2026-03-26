@@ -4,7 +4,7 @@
 #' before [pmstandardize()] or [iarimax()]. After [pmstandardize()], all
 #' non-constant series have within-person variance \eqn{\approx 1} by
 #' construction, making [iarimax()]'s `minvar` filter ineffective. Running
-#' `i_screen()` on raw data prevents low-quality subjects from entering the
+#' `i_screener()` on raw data prevents low-quality subjects from entering the
 #' pipeline.
 #'
 #' @export
@@ -63,9 +63,9 @@
 #' `NA`. Downstream functions such as [iarimax()] will apply their own joint
 #' filter over whatever columns remain.
 #'
-#' Note that `i_screen()` evaluates each column's non-`NA` count independently
+#' Note that `i_screener()` evaluates each column's non-`NA` count independently
 #' (`min_n`), whereas [iarimax()] filters on *pairwise-complete* observations
-#' across all series jointly. A subject that passes `i_screen()`'s `min_n`
+#' across all series jointly. A subject that passes `i_screener()`'s `min_n`
 #' threshold may still be excluded by [iarimax()] if the non-`NA` rows in the
 #' outcome and predictor series do not sufficiently overlap.
 #'
@@ -77,9 +77,9 @@
 #' The `minvar` filters in [iarimax()] and [i_detrender()] serve a different,
 #' complementary role: they are technical last-resort guards that protect each
 #' function when called independently. In particular, [i_detrender()]'s
-#' post-detrend variance check catches series that pass `i_screen()` on raw
+#' post-detrend variance check catches series that pass `i_screener()` on raw
 #' data but produce near-zero residuals after removing a near-perfect linear
-#' trend — a case `i_screen()` cannot anticipate.
+#' trend — a case `i_screener()` cannot anticipate.
 #'
 #' @return Depends on `mode`:
 #' - `"filter"`: a dataframe with the same columns as input but possibly fewer
@@ -103,19 +103,19 @@
 #' }))
 #'
 #' # Remove subjects failing default min_n = 20 or a minimum SD criterion
-#' result <- i_screen(panel, cols = c("x", "y"), idvar = "id", min_sd = 0.5)
+#' result <- i_screener(panel, cols = c("x", "y"), idvar = "id", min_sd = 0.5)
 #'
 #' # Inspect which subjects would be removed without committing
-#' flagged <- i_screen(panel, cols = c("x", "y"), idvar = "id",
+#' flagged <- i_screener(panel, cols = c("x", "y"), idvar = "id",
 #'                     min_sd = 0.5, mode = "flag")
 #' table(flagged$pass_screen)
 #'
 #' # Retrieve a per-subject quality summary
-#' report <- i_screen(panel, cols = c("x", "y"), idvar = "id",
+#' report <- i_screener(panel, cols = c("x", "y"), idvar = "id",
 #'                    min_sd = 0.5, mode = "report")
 #' print(report)
 
-i_screen <- function(df, cols, idvar,
+i_screener <- function(df, cols, idvar,
                      min_n        = 20,
                      min_sd       = NULL,
                      max_mode_pct = NULL,
@@ -160,16 +160,16 @@ i_screen <- function(df, cols, idvar,
   if (mode == "flag" && filter_type == "joint" && "pass_screen" %in% names(df)) {
     stop(
       "Input dataframe already contains a column named 'pass_screen'. ",
-      "Please rename it before calling i_screen()."
+      "Please rename it before calling i_screener()."
     )
   }
   if (filter_type == "per_column") {
     conflicts <- intersect(names(df), paste0(cols, "_pass"))
     if (length(conflicts) > 0) {
       stop(
-        "Input dataframe already contains column(s) that i_screen uses internally: ",
+        "Input dataframe already contains column(s) that i_screener uses internally: ",
         paste(conflicts, collapse = ", "),
-        ". Please rename them before calling i_screen()."
+        ". Please rename them before calling i_screener()."
       )
     }
   }
@@ -182,7 +182,7 @@ i_screen <- function(df, cols, idvar,
 
   # Provide explanation, conditional to verbose = TRUE.
   if (verbose) {
-    message("i_screen applies per-subject data quality filters.")
+    message("i_screener applies per-subject data quality filters.")
     message("   min_n        : subjects need >= ", min_n, " non-NA observations per variable.")
     if (!is.null(min_sd)) {
       message("   min_sd       : subjects need within-person SD >= ", min_sd, " per variable.")
