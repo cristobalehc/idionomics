@@ -36,19 +36,68 @@ devtools::install_github("cristobalehc/idionomics")
 ## Recommended analysis pipeline
 
 ```
-pmstandardize()   →   i_detrender()   →   iarimax()   →   i_pval() / sden_test()
+i_screen()   →   pmstandardize()   →   i_detrender()   →   iarimax()   →   i_pval() / sden_test()
 ```
 
-1. **`pmstandardize()` [optional]** — within-person z-scoring. Removes between-person differences in mean and variance so coefficients are comparable across subjects.
-2. **`i_detrender()` [optional]** — linear detrending. Removes the linear time trend within each subject and each variable independently, to reduce the differencing order auto.arima selects, among other uses.  
-3. **`iarimax()`** — per-subject ARIMAX fitting and random-effects meta-analysis.
-4. **`i_pval()`** — attaches per-subject p-values based on ML-consistent degrees of freedom.
-5. **`sden_test()`** — Sign Divergence / Equisyncratic Null test: a binomial test on the count of significant individual-level effects.
+1. **`i_screen()` [optional]** — pre-pipeline data quality filter. Removes or flags subjects with too few observations, insufficient raw variance, or repetitive responses before standardization. Should run on raw data, before `pmstandardize()`.
+2. **`pmstandardize()` [optional]** — within-person z-scoring. Removes between-person differences in mean and variance so coefficients are comparable across subjects.
+3. **`i_detrender()` [optional]** — linear detrending. Removes the linear time trend within each subject and each variable independently, to reduce the differencing order auto.arima selects, among other uses.
+4. **`iarimax()`** — per-subject ARIMAX fitting and random-effects meta-analysis.
+5. **`i_pval()`** — attaches per-subject p-values based on ML-consistent degrees of freedom.
+6. **`sden_test()`** — Sign Divergence / Equisyncratic Null test: a binomial test on the count of significant individual-level effects.
 
 
 ---
 
 ## Function reference
+
+### `i_screen()` — Pre-pipeline data quality filter
+
+```r
+i_screen(df, cols, idvar,
+         min_n        = 20,
+         min_sd       = NULL,
+         max_mode_pct = NULL,
+         filter_type  = "joint",
+         mode         = "filter",
+         verbose      = FALSE)
+```
+
+Screens subjects for data quality on raw (unstandardised) data before it enters the pipeline. After `pmstandardize()`, all non-constant series have within-person variance ≈ 1 by construction, making `iarimax()`'s `minvar` filter ineffective. Running `i_screen()` on raw data catches low-quality subjects at the right stage.
+
+Three configurable criteria (all optional except `min_n`):
+
+| Criterion | What it catches | Default |
+|---|---|---|
+| `min_n` | Subjects with too few observations | 20 |
+| `min_sd` | Near-constant series (floor/ceiling, low range) | `NULL` (off) |
+| `max_mode_pct` | "Stuck" responders (e.g. ≥ 80 % of responses identical) | `NULL` (off) |
+
+`filter_type = "joint"` (default) excludes a subject if they fail any criterion on any variable — consistent with `iarimax()`'s AND filter. `filter_type = "per_column"` evaluates each variable independently.
+
+`mode` controls the output format:
+- `"filter"` — returns the dataframe with failing subjects removed (joint) or their failing column values set to `NA` (per_column).
+- `"flag"` — appends a logical `pass_screen` column (joint) or `<col>_pass` columns (per_column).
+- `"report"` — returns a per-subject quality summary table.
+
+```r
+# Remove subjects with too few obs or low raw variance, before standardizing
+panel_clean <- i_screen(panel, cols = c("x", "y"), idvar = "id",
+                        min_n = 20, min_sd = 0.5)
+
+# Inspect quality without committing to removal
+report <- i_screen(panel, cols = c("x", "y"), idvar = "id",
+                   min_n = 20, min_sd = 0.5, max_mode_pct = 0.80,
+                   mode = "report")
+print(report)
+
+# Flag subjects for inspection, then decide
+flagged <- i_screen(panel, cols = c("x", "y"), idvar = "id",
+                    min_sd = 0.5, mode = "flag")
+table(flagged$pass_screen)
+```
+
+---
 
 ### `pmstandardize()` — Within-person z-scoring
 
@@ -216,26 +265,30 @@ panel <- do.call(rbind, lapply(1:10, function(id) {
   )
 }))
 
-# Step 1: Within-person standardization
-panel_std <- pmstandardize(panel, cols = c("x", "y"), idvar = "id")
+# Step 1: Quality screening on raw data (before standardization)
+panel_clean <- i_screen(panel, cols = c("x", "y"), idvar = "id",
+                        min_n = 20, min_sd = 0.3, max_mode_pct = 0.80)
 
-# Step 2: Linear detrending
+# Step 2: Within-person standardization
+panel_std <- pmstandardize(panel_clean, cols = c("x", "y"), idvar = "id")
+
+# Step 3: Linear detrending
 panel_dt <- i_detrender(panel_std, cols = c("x_psd", "y_psd"),
                         idvar = "id", timevar = "time")
 
-# Step 3: I-ARIMAX
+# Step 4: I-ARIMAX
 result <- iarimax(panel_dt,
                   y_series = "y_psd_dt", x_series = "x_psd_dt",
                   id_var = "id", timevar = "time")
 
-# Step 4: Summary and plot
+# Step 5: Summary and plot
 summary(result)
 plot(result, y_series_name = "Mood", x_series_name = "Stress")
 
-# Step 5: Per-subject p-values
+# Step 6: Per-subject p-values
 result_pval <- i_pval(result)
 
-# Step 6: SDEN test
+# Step 7: SDEN test
 sden <- sden_test(result_pval)
 summary(sden)
 ```
