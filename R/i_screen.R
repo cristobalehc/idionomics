@@ -116,12 +116,12 @@ i_screen <- function(df, cols, idvar,
                      mode         = "filter",
                      verbose      = FALSE) {
 
-  # ── Input validation ───────────────────────────────────────────────────────
-
+  # Guard: cols must be non-empty.
   if (length(cols) == 0) {
     stop("'cols' must contain at least one column name.")
   }
 
+  # Check if the provided variables are in the dataframe.
   required_vars <- c(cols, idvar)
   if (!all(required_vars %in% colnames(df))) {
     missing_vars <- required_vars[!required_vars %in% colnames(df)]
@@ -131,24 +131,17 @@ i_screen <- function(df, cols, idvar,
     ))
   }
 
-  if (!is.numeric(min_n) || is.na(min_n) || !is.finite(min_n) ||
-      length(min_n) != 1 || min_n < 1) {
+  # Validate threshold parameters.
+  if (!is.numeric(min_n) || is.na(min_n) || !is.finite(min_n) || length(min_n) != 1 || min_n < 1) {
     stop("'min_n' must be a finite positive integer.")
   }
-
-  if (!is.null(min_sd)) {
-    if (!is.numeric(min_sd) || is.na(min_sd) || length(min_sd) != 1 || min_sd <= 0) {
-      stop("'min_sd' must be a positive number.")
-    }
+  if (!is.null(min_sd) && (!is.numeric(min_sd) || is.na(min_sd) || length(min_sd) != 1 || min_sd <= 0)) {
+    stop("'min_sd' must be a positive number.")
   }
-
-  if (!is.null(max_mode_pct)) {
-    if (!is.numeric(max_mode_pct) || length(max_mode_pct) != 1 ||
-        max_mode_pct <= 0 || max_mode_pct > 1) {
-      stop("'max_mode_pct' must be a number strictly greater than 0 and at most 1.")
-    }
+  if (!is.null(max_mode_pct) && (!is.numeric(max_mode_pct) || length(max_mode_pct) != 1 ||
+      max_mode_pct <= 0 || max_mode_pct > 1)) {
+    stop("'max_mode_pct' must be a number strictly greater than 0 and at most 1.")
   }
-
   if (!filter_type %in% c("joint", "per_column")) {
     stop("'filter_type' must be 'joint' or 'per_column'.")
   }
@@ -156,10 +149,7 @@ i_screen <- function(df, cols, idvar,
     stop("'mode' must be 'filter', 'flag', or 'report'.")
   }
 
-  # Guard: check for output column name collisions before touching the data.
-  # mode="flag" + joint temporarily adds pass_screen; per_column adds <col>_pass.
-  # mode="filter" + per_column temporarily joins <col>_pass before removing it.
-  # If the input already has these names, left_join() silently appends .x/.y suffixes.
+  # Check for output column name collisions that would corrupt output silently.
   if (mode == "flag" && filter_type == "joint" && "pass_screen" %in% names(df)) {
     stop(
       "Input dataframe already contains a column named 'pass_screen'. ",
@@ -177,24 +167,21 @@ i_screen <- function(df, cols, idvar,
     }
   }
 
-  # ── Setup ──────────────────────────────────────────────────────────────────
-
+  # Remove any pre-existing grouping.
   df        <- dplyr::ungroup(df)
   idvar_sym <- rlang::sym(idvar)
 
   n_subjects_original <- length(unique(df[[idvar]]))
 
+  # Provide explanation, conditional to verbose = TRUE.
   if (verbose) {
     message("i_screen applies per-subject data quality filters.")
-    message("   min_n        : subjects need >= ", min_n,
-            " non-NA observations per variable.")
+    message("   min_n        : subjects need >= ", min_n, " non-NA observations per variable.")
     if (!is.null(min_sd)) {
-      message("   min_sd       : subjects need within-person SD >= ",
-              min_sd, " per variable.")
+      message("   min_sd       : subjects need within-person SD >= ", min_sd, " per variable.")
     }
     if (!is.null(max_mode_pct)) {
-      message("   max_mode_pct : subjects need <= ", max_mode_pct * 100,
-              "% of responses on the modal value.")
+      message("   max_mode_pct : subjects need <= ", max_mode_pct * 100, "% of responses on the modal value.")
     }
     message(
       "   filter_type  : '", filter_type, "' - ",
@@ -203,8 +190,7 @@ i_screen <- function(df, cols, idvar,
     )
   }
 
-  # ── Compute per-subject, per-column quality metrics ────────────────────────
-
+  # Compute per-subject, per-column quality metrics.
   metrics <- df |>
     dplyr::group_by(!!idvar_sym) |>
     dplyr::summarise(
@@ -212,7 +198,7 @@ i_screen <- function(df, cols, idvar,
         dplyr::all_of(cols),
         list(
           n_valid  = ~ sum(!is.na(.x)),
-          # sd() requires >= 2 non-NA values to return a finite result
+          # sd() requires >= 2 non-NA values to return a finite result.
           sd       = ~ if (sum(!is.na(.x)) >= 2) stats::sd(.x, na.rm = TRUE)
                        else NA_real_,
           mode_pct = ~ {
@@ -226,8 +212,7 @@ i_screen <- function(df, cols, idvar,
       .groups = "drop"
     )
 
-  # ── Apply criteria per column ──────────────────────────────────────────────
-
+  # Apply each criterion and record pass/fail per subject per column.
   for (col in cols) {
     n_col    <- paste0(col, "_n_valid")
     sd_col   <- paste0(col, "_sd")
@@ -237,21 +222,16 @@ i_screen <- function(df, cols, idvar,
     col_pass <- metrics[[n_col]] >= min_n
 
     if (!is.null(min_sd)) {
-      col_pass <- col_pass &
-        !is.na(metrics[[sd_col]]) &
-        (metrics[[sd_col]] >= min_sd)
+      col_pass <- col_pass & !is.na(metrics[[sd_col]]) & (metrics[[sd_col]] >= min_sd)
     }
     if (!is.null(max_mode_pct)) {
-      col_pass <- col_pass &
-        !is.na(metrics[[mode_col]]) &
-        (metrics[[mode_col]] <= max_mode_pct)
+      col_pass <- col_pass & !is.na(metrics[[mode_col]]) & (metrics[[mode_col]] <= max_mode_pct)
     }
 
     metrics[[pass_col]] <- col_pass
   }
 
-  # ── Compute overall pass (all columns must pass all criteria) ──────────────
-
+  # Compute overall pass: subject passes only if every column passes every criterion.
   pass_cols <- paste0(cols, "_pass")
   metrics <- metrics |>
     dplyr::mutate(
@@ -266,8 +246,7 @@ i_screen <- function(df, cols, idvar,
     message("   Subjects retained         : ", n_pass)
   }
 
-  # ── Return ─────────────────────────────────────────────────────────────────
-
+  # IF mode == "report", return a per-subject quality summary table.
   if (mode == "report") {
     out_cols <- c(
       idvar,
@@ -280,24 +259,27 @@ i_screen <- function(df, cols, idvar,
     return(metrics |> dplyr::select(dplyr::all_of(out_cols)))
   }
 
+  # IF mode == "flag", append pass/fail columns to the original dataframe.
   if (mode == "flag") {
     if (filter_type == "joint") {
       pass_info <- metrics[, idvar, drop = FALSE]
       pass_info$pass_screen <- metrics$pass_overall
       return(dplyr::left_join(df, pass_info, by = idvar))
-    } else {
+    }
+    else {
       pass_info <- metrics |>
         dplyr::select(!!idvar_sym, dplyr::all_of(pass_cols))
       return(dplyr::left_join(df, pass_info, by = idvar))
     }
   }
 
-  # mode == "filter"
+  # IF mode == "filter" + filter_type == "joint", remove failing subjects entirely.
+  # IF mode == "filter" + filter_type == "per_column", set failing column values to NA.
   if (filter_type == "joint") {
     keep_ids <- metrics[[idvar]][metrics$pass_overall]
     return(df |> dplyr::filter(!!idvar_sym %in% keep_ids))
-  } else {
-    # per_column: set values to NA in each column where the subject fails
+  }
+  else {
     pass_info <- metrics |>
       dplyr::select(!!idvar_sym, dplyr::all_of(pass_cols))
     df <- dplyr::left_join(df, pass_info, by = idvar)
@@ -308,4 +290,5 @@ i_screen <- function(df, cols, idvar,
     }
     return(df)
   }
+
 }
