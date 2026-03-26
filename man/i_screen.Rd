@@ -115,6 +115,13 @@ When \code{mode = "report"}, \code{filter_type} does not affect the output shape
 report always contains one row per subject with quality metrics for all
 columns. \code{pass_overall} always reflects the joint AND across all columns,
 matching \code{filter_type = "joint"} semantics.
+
+The \code{minvar} filters in \code{\link[=iarimax]{iarimax()}} and \code{\link[=i_detrender]{i_detrender()}} serve a different,
+complementary role: they are technical last-resort guards that protect each
+function when called independently. In particular, \code{\link[=i_detrender]{i_detrender()}}'s
+post-detrend variance check catches series that pass \code{i_screen()} on raw
+data but produce near-zero residuals after removing a near-perfect linear
+trend — a case \code{i_screen()} cannot anticipate.
 }
 \examples{
 set.seed(1)

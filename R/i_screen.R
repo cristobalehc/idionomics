@@ -74,6 +74,13 @@
 #' columns. `pass_overall` always reflects the joint AND across all columns,
 #' matching `filter_type = "joint"` semantics.
 #'
+#' The `minvar` filters in [iarimax()] and [i_detrender()] serve a different,
+#' complementary role: they are technical last-resort guards that protect each
+#' function when called independently. In particular, [i_detrender()]'s
+#' post-detrend variance check catches series that pass `i_screen()` on raw
+#' data but produce near-zero residuals after removing a near-perfect linear
+#' trend — a case `i_screen()` cannot anticipate.
+#'
 #' @return Depends on `mode`:
 #' - `"filter"`: a dataframe with the same columns as input but possibly fewer
 #'   rows (`"joint"`) or `NA` values in screened columns (`"per_column"`).
