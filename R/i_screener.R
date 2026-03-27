@@ -92,6 +92,7 @@
 #'   all `<col>_mode_pct`, then all `<col>_pass`, and finally `pass_overall`.
 #'
 #' @examples
+#' local({
 #' set.seed(1)
 #' panel <- do.call(rbind, lapply(1:4, function(id) {
 #'   data.frame(
@@ -115,6 +116,7 @@
 #' report <- i_screener(panel, cols = c("x", "y"), idvar = "id",
 #'                    min_sd = 0.5, mode = "report")
 #' print(report)
+#' })
 
 i_screener <- function(df, cols, idvar,
                      min_n_subject = 20,

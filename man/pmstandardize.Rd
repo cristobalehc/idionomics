@@ -47,6 +47,7 @@ If you plan to pass output to \code{\link[=iarimax]{iarimax()}}, those subjects 
 out by its \code{minvar} threshold.
 }
 \examples{
+local({
 # Build a small panel: 3 subjects, 10 observations each
 set.seed(1)
 panel <- do.call(rbind, lapply(1:3, function(id) {
@@ -66,4 +67,5 @@ head(result)  # original columns + x_psd + y_psd
 # Return only the ID and standardized columns
 result_slim <- pmstandardize(panel, cols = "x", idvar = "id", append = FALSE)
 head(result_slim)
+})
 }

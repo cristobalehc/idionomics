@@ -178,7 +178,8 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
       message('Running Sign Divergence Test (SDT): number of negative cases (counter positive pooled-effect) values are being evaluated')
 
       if (rema_pval >= 0.05) {
-        message(paste0('The p-value of the pooled effect is not significant at 0.05.\n p = ', round(rema_pval,4), ". \n ENT test is suggested"))
+        message('The p-value of the pooled effect is not significant at 0.05.',
+                ' p = ', round(rema_pval, 4), '. ENT test is suggested.')
       }
 
       sig_effects <- negative_sig_sum
@@ -190,7 +191,8 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
     else if (rema_beta < 0) {
 
       if (rema_pval >= 0.05) {
-        message(paste0('The p-value of the pooled effect is not significant at 0.05.\n p = ', round(rema_pval,4), ". \n ENT test is suggested"))
+        message('The p-value of the pooled effect is not significant at 0.05.',
+                ' p = ', round(rema_pval, 4), '. ENT test is suggested.')
       }
 
       message('Running Sign Divergence Test (SDT): number of positive cases (counter negative pooled-effect) values are being evaluated')
@@ -217,7 +219,8 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
     message('Running Equisyncratic Null Test (ENT)')
 
     if (rema_pval < 0.05) {
-      message(paste0('The p-value of the pooled effect statistically significant at 0.05.\n p = ', round(rema_pval,4), ".\n SDT test is suggested"))
+      message('The p-value of the pooled effect is statistically significant at 0.05.',
+              ' p = ', round(rema_pval, 4), '. SDT test is suggested.')
     }
 
     sig_effects <- all_sig_sum

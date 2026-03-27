@@ -125,6 +125,7 @@ data but produce near-zero residuals after removing a near-perfect linear
 trend — a case \code{i_screener()} cannot anticipate.
 }
 \examples{
+local({
 set.seed(1)
 panel <- do.call(rbind, lapply(1:4, function(id) {
   data.frame(
@@ -148,4 +149,5 @@ table(flagged$pass_screen)
 report <- i_screener(panel, cols = c("x", "y"), idvar = "id",
                    min_sd = 0.5, mode = "report")
 print(report)
+})
 }

@@ -74,6 +74,7 @@ person-mean standardization and allow them to slip through \code{\link[=iarimax]
 filters.
 }
 \examples{
+local({
 # Build a panel with a linear time trend embedded in x
 set.seed(2)
 panel <- do.call(rbind, lapply(1:3, function(id) {
@@ -93,4 +94,5 @@ head(result)
 result_slim <- i_detrender(panel, cols = "x", idvar = "id",
                            timevar = "time", append = FALSE)
 head(result_slim)
+})
 }

@@ -34,6 +34,7 @@
 #'   within-person z-scores.
 #'
 #' @examples
+#' local({
 #' # Build a small panel: 3 subjects, 10 observations each
 #' set.seed(1)
 #' panel <- do.call(rbind, lapply(1:3, function(id) {
@@ -53,6 +54,7 @@
 #' # Return only the ID and standardized columns
 #' result_slim <- pmstandardize(panel, cols = "x", idvar = "id", append = FALSE)
 #' head(result_slim)
+#' })
 
 pmstandardize <- function(df, cols, idvar, verbose = FALSE, append = TRUE) {
 
@@ -78,11 +80,11 @@ pmstandardize <- function(df, cols, idvar, verbose = FALSE, append = TRUE) {
 
   # Provide explanation, conditional to verbose = TRUE.
   if (verbose) {
-    message('This function creates within-person z-scores (person-level standardization).', "\n")
-    message('   If all values for a feature within ID are NA, returns NA.', "\n")
-    message('   If fewer than 2 non-NA values exist, returns 0 (SD undefined).', "\n")
-    message('   If values are constant within person, returns 0 (zero variance).', "\n")
-    message('   Otherwise, returns (x - person_mean) / person_sd.', "\n")
+    message('This function creates within-person z-scores (person-level standardization).')
+    message('   If all values for a feature within ID are NA, returns NA.')
+    message('   If fewer than 2 non-NA values exist, returns 0 (SD undefined).')
+    message('   If values are constant within person, returns 0 (zero variance).')
+    message('   Otherwise, returns (x - person_mean) / person_sd.')
   }
 
   # Apply within-person z-scoring.
