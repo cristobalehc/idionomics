@@ -1,6 +1,6 @@
 #' Screen subjects for data quality before entering the idionomic pipeline.
 #'
-#' Applies per-subject data quality filters on raw (unstandardised) time series
+#' Applies per-subject data quality filters on raw (unstandardized) time series
 #' before [pmstandardize()] or [iarimax()]. After [pmstandardize()], all
 #' non-constant series have within-person variance \eqn{\approx 1} by
 #' construction, making [iarimax()]'s `minvar` filter ineffective. Running
@@ -30,7 +30,7 @@
 #'   how criteria are applied across multiple columns:
 #'   - `"joint"`: a subject is excluded or flagged if they fail *any* criterion
 #'     on *any* variable. Mirrors [iarimax()]'s AND filter. Recommended when
-#'     all `cols` will be analysed together in the same model.
+#'     all `cols` will be analyzed together in the same model.
 #'   - `"per_column"`: each column is evaluated independently. A subject can
 #'     pass for one variable and fail for another. Useful for exploratory quality
 #'     inspection across a broad set of variables.

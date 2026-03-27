@@ -11,3 +11,5 @@ CLAUDE.md
 .claude/
 .claude/agent-memory/
 .claude/agents/
+/doc/
+/Meta/

@@ -107,7 +107,7 @@ summary.iarimax_results <- function(object, alpha = 0.05, ...) {
 #'   internally.
 #' @param y_series_name Optional: substantive name for the outcome variable, used in the plot title.
 #' @param x_series_name Optional: substantive name for the predictor variable, used in the plot title.
-#' @param alpha_crit_t Critical value for per-subject significance colouring. Defaults to 0.05.
+#' @param alpha_crit_t Critical value for per-subject significance coloring. Defaults to 0.05.
 #' @param lims Numeric vector of length 2 setting the effect size axis limits. Defaults to \code{c(-1, 1)}.
 #' @param ... Additional arguments (ignored).
 #' @return A ggplot2 object.

@@ -5,3 +5,6 @@
 ^\.claude$
 ^review_notes\.md$
 ^LICENSE\.md$
+^cran-comments\.md$
+^doc$
+^Meta$
