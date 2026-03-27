@@ -20,6 +20,8 @@ Description: A toolkit for idionomic science, a research philosophy that places 
     ('iarimax()'), individual p-values ('i_pval()'), Sign Divergence and
     Equisyncratic Null tests ('sden_test()'), and directed loop detection
     ('looping_machine()').
+URL: https://github.com/cristobalehc/idionomics
+BugReports: https://github.com/cristobalehc/idionomics/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

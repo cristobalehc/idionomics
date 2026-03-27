@@ -25,7 +25,7 @@ internally.}
 
 \item{x_series_name}{Optional: substantive name for the predictor variable, used in the plot title.}
 
-\item{alpha_crit_t}{Critical value for per-subject significance colouring. Defaults to 0.05.}
+\item{alpha_crit_t}{Critical value for per-subject significance coloring. Defaults to 0.05.}
 
 \item{lims}{Numeric vector of length 2 setting the effect size axis limits. Defaults to \code{c(-1, 1)}.}
 

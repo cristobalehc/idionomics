@@ -45,7 +45,7 @@ how criteria are applied across multiple columns:
 \itemize{
 \item \code{"joint"}: a subject is excluded or flagged if they fail \emph{any} criterion
 on \emph{any} variable. Mirrors \code{\link[=iarimax]{iarimax()}}'s AND filter. Recommended when
-all \code{cols} will be analysed together in the same model.
+all \code{cols} will be analyzed together in the same model.
 \item \code{"per_column"}: each column is evaluated independently. A subject can
 pass for one variable and fail for another. Useful for exploratory quality
 inspection across a broad set of variables.
@@ -79,7 +79,7 @@ all \verb{<col>_mode_pct}, then all \verb{<col>_pass}, and finally \code{pass_ov
 }
 }
 \description{
-Applies per-subject data quality filters on raw (unstandardised) time series
+Applies per-subject data quality filters on raw (unstandardized) time series
 before \code{\link[=pmstandardize]{pmstandardize()}} or \code{\link[=iarimax]{iarimax()}}. After \code{\link[=pmstandardize]{pmstandardize()}}, all
 non-constant series have within-person variance \eqn{\approx 1} by
 construction, making \code{\link[=iarimax]{iarimax()}}'s \code{minvar} filter ineffective. Running
