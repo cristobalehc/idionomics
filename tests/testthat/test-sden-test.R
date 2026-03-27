@@ -194,6 +194,21 @@ test_that("auto: exactly-zero REMA beta with significant p-value falls back to E
   expect_equal(result$sden_parameters$selection_mechanism, "auto")
 })
 
+test_that("auto mode uses hardcoded 0.05 pivot, not alpha_arimax, for test selection", {
+  # rema_pval = 0.03: significant at 0.05 -> SDT counter-positive regardless of alpha_arimax
+  fake_pos <- make_fake_sden_input(rema_beta = 0.5, rema_pval = 0.03)
+  r_default <- suppressMessages(sden_test(fake_pos, test = "auto", alpha_arimax = 0.05))
+  expect_equal(r_default$sden_parameters$test_type, "SDT counter-positive")
+  # With alpha_arimax = 0.01: rema_pval (0.03) exceeds 0.01 but the auto pivot
+  # is still the hardcoded 0.05, so SDT is still selected (not ENT).
+  r_strict <- suppressMessages(sden_test(fake_pos, test = "auto", alpha_arimax = 0.01))
+  expect_equal(r_strict$sden_parameters$test_type, "SDT counter-positive")
+  # rema_pval = 0.07: not significant at 0.05 -> ENT, even with lax alpha_arimax = 0.10
+  fake_ns <- make_fake_sden_input(rema_beta = 0.5, rema_pval = 0.07)
+  r_lax   <- suppressMessages(sden_test(fake_ns, test = "auto", alpha_arimax = 0.10))
+  expect_equal(r_lax$sden_parameters$test_type, "ENT")
+})
+
 # ── Manual test selection ─────────────────────────────────────────────────────
 
 test_that("test = 'ENT' forces ENT regardless of REMA", {
@@ -289,35 +304,48 @@ test_that("SDT counter-negative binomial test uses positive_sig_sum and alpha_ar
 # Layer 2 — Integration on real iarimax output (skip on CRAN)
 # ══════════════════════════════════════════════════════════════════════════════
 
-skip_on_cran()
+panel <- make_panel(n_subjects = 4, n_obs = 25, seed = 42)
 
-panel  <- make_panel(n_subjects = 4, n_obs = 25, seed = 42)
-result <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
-                  id_var = "id", timevar = "time")
+.sden_cache <- new.env(parent = emptyenv())
+
+.get_sden_result <- function() {
+  if (!exists("result", envir = .sden_cache)) {
+    skip_on_cran()
+    .sden_cache$result <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
+                                  id_var = "id", timevar = "time")
+  }
+  .sden_cache$result
+}
 
 test_that("sden_test runs without error on real iarimax output", {
-  expect_no_error(suppressMessages(sden_test(result)))
+  skip_on_cran()
+  expect_no_error(suppressMessages(sden_test(.get_sden_result())))
 })
 
 test_that("sden_test result is sden_results on real output", {
-  r <- suppressMessages(sden_test(result))
+  skip_on_cran()
+  r <- suppressMessages(sden_test(.get_sden_result()))
   expect_s3_class(r, "sden_results")
 })
 
 test_that("test_pval matches binomial_test$p.value on real output", {
-  r <- suppressMessages(sden_test(result))
+  skip_on_cran()
+  r <- suppressMessages(sden_test(.get_sden_result()))
   expect_equal(r$sden_parameters$test_pval,
                r$binomial_test$p.value,
                tolerance = 1e-12)
 })
 
 test_that("number_of_effects equals subjects with valid estimates on real output", {
+  skip_on_cran()
+  result   <- .get_sden_result()
   r        <- suppressMessages(sden_test(result))
   n_valid  <- sum(!is.na(result$results_df$estimate_x))
   expect_equal(r$sden_parameters$number_of_effects, n_valid)
 })
 
 test_that("sden_test works for non-focal predictor on real multi-predictor output", {
+  skip_on_cran()
   set.seed(7)
   panel2     <- panel
   panel2$x2  <- rnorm(nrow(panel2))

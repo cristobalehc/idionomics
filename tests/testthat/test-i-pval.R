@@ -217,19 +217,27 @@ test_that("each subject's p-value corresponds to its own estimate and SE, not a 
 # Layer 2 — LM comparison (integration, skip on CRAN)
 # ══════════════════════════════════════════════════════════════════════════════
 
-skip_on_cran()
-
 # Note: lm() is NOT used as ground truth here. ARIMA uses ML estimation for
 # sigma^2 (SSR/n) while lm() uses OLS (SSR/(n-k)), producing systematically
 # different standard errors and p-values even for ARIMA(0,0,0). The correct
 # ground truth is the formula itself, applied to real iarimax output.
 
-panel  <- make_wn_panel()
-result <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
-                  id_var = "id", timevar = "time")
+panel <- make_wn_panel()
+
+.wn_cache <- new.env(parent = emptyenv())
+
+.get_wn_result <- function() {
+  if (!exists("result", envir = .wn_cache)) {
+    skip_on_cran()
+    .wn_cache$result <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
+                                id_var = "id", timevar = "time")
+  }
+  .wn_cache$result
+}
 
 test_that("i_pval formula holds on real iarimax output", {
-  result_pval <- i_pval(result)
+  skip_on_cran()
+  result_pval <- i_pval(.get_wn_result())
   df          <- result_pval$results_df
 
   valid    <- !is.na(df$estimate_x) & !is.na(df[["std.error_x"]])
@@ -242,13 +250,15 @@ test_that("i_pval formula holds on real iarimax output", {
 })
 
 test_that("i_pval p-values are in (0, 1] on real iarimax output", {
-  result_pval <- i_pval(result)
+  skip_on_cran()
+  result_pval <- i_pval(.get_wn_result())
   pvals       <- result_pval$results_df$pval_x
   expect_true(all(pvals > 0 & pvals <= 1, na.rm = TRUE))
 })
 
 test_that("larger |t-statistic| produces smaller p-value on real iarimax output", {
-  result_pval <- i_pval(result)
+  skip_on_cran()
+  result_pval <- i_pval(.get_wn_result())
   df          <- result_pval$results_df
 
   valid  <- !is.na(df$estimate_x) & !is.na(df[["std.error_x"]])

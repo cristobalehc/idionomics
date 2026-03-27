@@ -106,6 +106,19 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
   bc_name <- paste0(b_series, "_", c_series)
   ca_name <- paste0(c_series, "_", a_series)
 
+  # Guard: leg names must be distinct so loop_df columns do not collide.
+  # Collision is possible when series names contain underscores (e.g.
+  # a="x", b="y_x", c="x_y" all produce the leg name "x_y_x").
+  leg_names <- c(ab_name, bc_name, ca_name)
+  if (length(unique(leg_names)) < 3L) {
+    stop(
+      "The series name combinations produce non-unique leg names: ",
+      paste(leg_names, collapse = ", "),
+      ". Rename your variables to remove ambiguity ",
+      "(e.g., avoid underscores in series names)."
+    )
+  }
+
   # Build x_series for each leg, optionally including the third loop variable as covariate.
   x_ab <- c(a_series, covariates, if (include_third_as_covariate) c_series)
   x_bc <- c(b_series, covariates, if (include_third_as_covariate) a_series)

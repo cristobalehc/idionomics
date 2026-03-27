@@ -433,6 +433,45 @@ test_that("each leg has the correct focal_predictor attribute", {
 })
 
 
+# ── Series names with underscores ────────────────────────────────────────────
+
+test_that("series names containing underscores produce correct leg column names", {
+  # Exercises the paste0(a_series, "_", b_series) leg naming with underscore-containing
+  # names. Verifies the expected column names appear in loop_df.
+  set.seed(11)
+  n_sub <- 4; n_obs <- 25
+  panel_u <- do.call(rbind, lapply(seq_len(n_sub), function(id) {
+    x_1 <- rnorm(n_obs)
+    x_2 <- 0.3 * x_1 + rnorm(n_obs)
+    x_3 <- 0.3 * x_2 + rnorm(n_obs)
+    data.frame(id = as.character(id), time = seq_len(n_obs),
+               x_1 = x_1, x_2 = x_2, x_3 = x_3, stringsAsFactors = FALSE)
+  }))
+  r <- suppressMessages(
+    looping_machine(panel_u, a_series = "x_1", b_series = "x_2", c_series = "x_3",
+                    id_var = "id", timevar = "time")
+  )
+  expect_true("x_1_x_2" %in% names(r$loop_df))
+  expect_true("x_2_x_3" %in% names(r$loop_df))
+  expect_true("x_3_x_1" %in% names(r$loop_df))
+})
+
+test_that("colliding leg names from underscore series trigger an informative error", {
+  # a="x", b="y_x", c="x_y" makes ab_name = ca_name = "x_y_x".
+  panel_c <- data.frame(
+    id  = rep(c("1", "2"), each = 5),
+    time = rep(seq_len(5), 2),
+    x   = rnorm(10), y_x = rnorm(10), x_y = rnorm(10),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    looping_machine(panel_c, a_series = "x", b_series = "y_x", c_series = "x_y",
+                    id_var = "id", timevar = "time", min_n_subject = 1),
+    regexp = "non-unique leg names"
+  )
+})
+
+
 # ── Merge integrity ───────────────────────────────────────────────────────────
 
 test_that("loop_df row count is <= min n_used_iarimax across the three legs", {

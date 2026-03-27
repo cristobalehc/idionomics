@@ -81,6 +81,27 @@ test_that("subject with many NA y rows can fall below min_n_subject", {
   expect_false("sparse" %in% res$results_df$id)
 })
 
+# ── n_filtered_out component value ───────────────────────────────────────────
+
+test_that("n_filtered_out equals the count of subjects removed by the var/n filter", {
+  skip_on_cran()
+  set.seed(1)
+  base  <- make_panel(n_subjects = 3, n_obs = 25)
+  short <- rbind(
+    data.frame(id = "s1", time = seq_len(10), x = rnorm(10), y = rnorm(10),
+               stringsAsFactors = FALSE),
+    data.frame(id = "s2", time = seq_len(10), x = rnorm(10), y = rnorm(10),
+               stringsAsFactors = FALSE)
+  )
+  panel <- rbind(base, short)
+  res   <- iarimax(panel, y_series = "y", x_series = "x",
+                   id_var = "id", timevar = "time", min_n_subject = 20)
+  expect_equal(res$case_number_detail$n_original_df, 5L)
+  expect_equal(res$case_number_detail$n_filtered_out, 2L)
+  expect_equal(res$case_number_detail$n_used_iarimax, 3L)
+})
+
+
 # ── id_var coercion ───────────────────────────────────────────────────────────
 
 test_that("numeric id_var is coerced to character in results_df", {
