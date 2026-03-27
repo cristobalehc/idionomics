@@ -15,9 +15,16 @@ sden_test(
 \arguments{
 \item{iarimax_object}{Your iarimax object.}
 
-\item{alpha_arimax}{Critical value for arimax parameter significance. Defaults to 0.05.}
+\item{alpha_arimax}{Critical value for per-subject ARIMAX coefficient significance. Defaults to 0.05.
+In ENT mode this value serves double duty: it is both the threshold for counting a subject's
+effect as significant (numerator) and the null probability for the binomial test (denominator).
+Raising it simultaneously increases the count of significant effects and raises the null
+expectation against which they are tested. Use \code{alpha_binom} to set the binomial null
+probability independently if you need to decouple the two.}
 
-\item{alpha_binom}{Critical value for binomial test. Defaults to alpha_arimax for ENT, and alpha_arimax/2 for SDT}
+\item{alpha_binom}{Null probability for the binomial test. Defaults to \code{alpha_arimax} for
+ENT and \code{alpha_arimax / 2} for SDT. Supply this to override the default without changing
+the per-subject significance threshold.}
 
 \item{test}{Type of test, default to "auto". "auto", "SDT", and "ENT" are supported.
 When \code{"auto"}, the selection between SDT and ENT is based on whether the pooled REMA

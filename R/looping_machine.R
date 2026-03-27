@@ -41,7 +41,7 @@
 #'   \item{alpha}{Significance threshold used.}
 #'   \item{covariates}{Covariate vector (NULL if none).}
 #'   \item{include_third_as_covariate}{Logical; whether the third variable was added as a covariate.}
-#'   \item{loop_case_detail}{List with \code{n_in_loop_df}, \code{n_complete}, and \code{n_na_indicator} (subjects with a failed model in any leg).}
+#'   \item{loop_case_detail}{List with \code{n_in_loop_df}, \code{n_complete}, \code{n_na_indicator} (subjects with a failed model in any leg), and \code{n_dropped_by_join} (subjects present in at least one leg but dropped from \code{loop_df} because they were absent from another leg due to filtering or model failure).}
 #'   \item{iarimax_a_to_b,iarimax_b_to_c,iarimax_c_to_a}{\code{iarimax_results} objects for each leg, with \code{i_pval} already applied.}
 #' }
 #'
@@ -78,6 +78,15 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
                             alpha = 0.05,
                             keep_models = FALSE,
                             verbose = FALSE) {
+
+  if (!is.numeric(min_n_subject) || length(min_n_subject) != 1 ||
+      !is.finite(min_n_subject) || min_n_subject < 1) {
+    stop("'min_n_subject' must be a finite positive number.")
+  }
+  if (!is.numeric(minvar) || length(minvar) != 1 ||
+      !is.finite(minvar) || minvar < 0) {
+    stop("'minvar' must be a finite non-negative number.")
+  }
 
   # Guard: all three series must be different variables.
   series_names <- c(a_series, b_series, c_series)
@@ -178,17 +187,25 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
   loop_df <- merge(loop_df, c_to_a_sub, by = id_var)
 
   # Create the positive directed loop indicator.
-  # Subjects where any leg's ARIMAX failed will have NA pvals/estimates, so
-  # Loop_positive_directed is NA for those subjects — a failed model is neither
-  # confirmed as a loop nor confirmed as a non-loop.
+  # Subjects where any leg's ARIMAX failed will have NA pvals/estimates.
+  # We guard explicitly: NA & FALSE == FALSE in R, so without the guard a subject
+  # with a failed model but a negative estimate would get 0 instead of NA.
+  any_na <- is.na(loop_df[[paste0(ab_name, "_pval")]]) |
+            is.na(loop_df[[paste0(bc_name, "_pval")]]) |
+            is.na(loop_df[[paste0(ca_name, "_pval")]])
+
   loop_df[["Loop_positive_directed"]] <- ifelse(
-    loop_df[[paste0(ab_name, "_pval")]] < alpha &
-      loop_df[[paste0(bc_name, "_pval")]] < alpha &
-      loop_df[[paste0(ca_name, "_pval")]] < alpha &
-      loop_df[[ab_name]] > 0 &
-      loop_df[[bc_name]] > 0 &
-      loop_df[[ca_name]] > 0,
-    1L, 0L
+    any_na,
+    NA_integer_,
+    ifelse(
+      loop_df[[paste0(ab_name, "_pval")]] < alpha &
+        loop_df[[paste0(bc_name, "_pval")]] < alpha &
+        loop_df[[paste0(ca_name, "_pval")]] < alpha &
+        loop_df[[ab_name]] > 0 &
+        loop_df[[bc_name]] > 0 &
+        loop_df[[ca_name]] > 0,
+      1L, 0L
+    )
   )
 
   if (verbose) message('Looping Machine finished.')
@@ -196,7 +213,19 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
   n_na_indicator <- sum(is.na(loop_df[["Loop_positive_directed"]]))
   n_complete     <- sum(!is.na(loop_df[["Loop_positive_directed"]]))
 
-  message(
+  # Count subjects dropped by the inner join (present in at least one leg but not all three).
+  ids_ab <- a_to_b$results_df[[id_var]]
+  ids_bc <- b_to_c$results_df[[id_var]]
+  ids_ca <- c_to_a$results_df[[id_var]]
+  n_union <- length(unique(c(ids_ab, ids_bc, ids_ca)))
+  n_dropped_by_join <- n_union - nrow(loop_df)
+
+  if (n_dropped_by_join > 0) {
+    message(n_dropped_by_join, ' subject(s) dropped from loop_df: present in at least one leg ',
+            'but excluded from another by the variance/n filter or a failed ARIMAX fit.')
+  }
+
+  if (verbose) message(
     'Number of cases with the positive loop present: ',
     sum(loop_df[["Loop_positive_directed"]], na.rm = TRUE),
     if (n_na_indicator > 0)
@@ -211,9 +240,10 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
     covariates                 = covariates,
     include_third_as_covariate = include_third_as_covariate,
     loop_case_detail           = list(
-      n_in_loop_df   = nrow(loop_df),
-      n_complete     = n_complete,
-      n_na_indicator = n_na_indicator
+      n_in_loop_df      = nrow(loop_df),
+      n_complete        = n_complete,
+      n_na_indicator    = n_na_indicator,
+      n_dropped_by_join = n_dropped_by_join
     ),
     iarimax_a_to_b             = a_to_b,
     iarimax_b_to_c             = b_to_c,

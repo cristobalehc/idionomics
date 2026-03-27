@@ -65,6 +65,38 @@ test_that("empty cols vector triggers error", {
   )
 })
 
+test_that("idvar as a vector triggers error", {
+  df <- make_det_df()
+  expect_error(
+    i_detrender(df, cols = "x", idvar = c("id", "id"), timevar = "time"),
+    regexp = "idvar"
+  )
+})
+
+test_that("timevar as a vector triggers error", {
+  df <- make_det_df()
+  expect_error(
+    i_detrender(df, cols = "x", idvar = "id", timevar = c("time", "time")),
+    regexp = "timevar"
+  )
+})
+
+test_that("min_n_subject = 0 triggers upfront error", {
+  df <- make_det_df()
+  expect_error(
+    i_detrender(df, cols = "x", idvar = "id", timevar = "time", min_n_subject = 0),
+    regexp = "min_n_subject"
+  )
+})
+
+test_that("minvar = -1 triggers upfront error", {
+  df <- make_det_df()
+  expect_error(
+    i_detrender(df, cols = "x", idvar = "id", timevar = "time", minvar = -1),
+    regexp = "minvar"
+  )
+})
+
 test_that("single NA in timevar triggers error reporting the count", {
   df         <- make_det_df()
   df$time[1] <- NA
@@ -308,11 +340,11 @@ test_that("scattered interior NAs are preserved at correct positions in _dt", {
   expect_false(any(is.na(result$x_dt[-c(5, 12, 20)])))
 })
 
-test_that("all-NA subject with min_n_subject = 0 still produces all-NA output", {
+test_that("all-NA subject produces all-NA output regardless of min_n_subject threshold", {
   df <- data.frame(id = "allna", time = seq_len(25),
                    x  = rep(NA_real_, 25), stringsAsFactors = FALSE)
   result <- i_detrender(df, cols = "x", idvar = "id", timevar = "time",
-                        min_n_subject = 0)
+                        min_n_subject = 1)
   expect_true(all(is.na(result$x_dt)))
 })
 

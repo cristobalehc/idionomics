@@ -35,10 +35,13 @@
 #'     \code{n_params} (number of model coefficients), and \code{raw_cor}
 #'     (pairwise correlation between the focal predictor and
 #'     \code{y_series}, not partialled for other predictors in
-#'     \code{x_series}). Subjects
-#'     whose \code{auto.arima()} call failed appear as rows of \code{NA}s;
-#'     their IDs are also listed in
-#'     \code{case_number_detail$error_arimax_skipped}.}
+#'     \code{x_series}). Subjects whose \code{auto.arima()} call failed
+#'     appear with \code{NA} for all model statistics (\code{nAR},
+#'     \code{nI}, \code{nMA}, \code{n_valid}, \code{n_params}, and all
+#'     coefficient/SE columns), but retain a valid \code{raw_cor} if the
+#'     correlation step succeeded before the model failure. \code{raw_cor}
+#'     is \code{NA} only if \code{cor.test()} also failed. Their IDs are
+#'     listed in \code{case_number_detail$error_arimax_skipped}.}
 #'   \item{meta_analysis}{A \code{metafor::rma} object from a random-effects
 #'     meta-analysis on the focal predictor coefficients, or \code{NULL} if
 #'     the meta-analysis failed (e.g. fewer than two valid estimates).}
@@ -92,6 +95,15 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
 
   # Check wether variables are in the in the dataset.
   required_vars <- c(y_series, x_series, id_var, timevar)
+
+  if (!is.numeric(min_n_subject) || length(min_n_subject) != 1 ||
+      !is.finite(min_n_subject) || min_n_subject < 1) {
+    stop("'min_n_subject' must be a finite positive number.")
+  }
+  if (!is.numeric(minvar) || length(minvar) != 1 ||
+      !is.finite(minvar) || minvar < 0) {
+    stop("'minvar' must be a finite non-negative number.")
+  }
 
   if (!correlation_method %in% c("pearson","spearman","kendall")) {
     stop(paste("Correlation method not supported. Check if you spelled the method correctly:", correlation_method))
@@ -149,7 +161,7 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
                     dplyr::if_all(dplyr::all_of(x_series), ~ !is.na(.x))) |> #Filter all that are complete in all variables.
     dplyr::summarise(
       count = dplyr::n(), #Use counts to filter.
-      var_y = stats::var(!!y_series_sym, na.rm = TRUE), #use variance to filter.
+      var_outcome = stats::var(!!y_series_sym, na.rm = TRUE), #use variance to filter.
       dplyr::across(dplyr::all_of(x_series), ~ stats::var(.x, na.rm = TRUE), .names = "var_{.col}"), #Variance for each predictor.
       .groups = 'drop'
     ) |>
@@ -406,4 +418,4 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
 }
 
 
-utils::globalVariables(c("count", "var_y")) #Declare symbolic global variables.
+utils::globalVariables(c("count", "var_outcome")) #Declare symbolic global variables.

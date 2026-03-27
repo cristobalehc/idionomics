@@ -181,9 +181,13 @@ plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
     ggplot2::coord_flip(ylim = lims) +
     ggplot2::labs(
       x       = "Participant ID",
-      y       = "i-ARIMAX Effect Sizes and 95% Confidence Intervals",
+      y       = paste0("i-ARIMAX Effect Sizes and ", round((1 - alpha_crit_t) * 100), "% Confidence Intervals"),
       title   = plot_title,
-      caption = "Note: Blue band = 95% CI of the RE-MA pooled effect.\nGreen = positive, Red = negative, Black = crosses zero."
+      caption = paste0(
+        "Note: Blue band = 95% CI of the RE-MA pooled effect. ",
+        "Per-subject bars = ", round((1 - alpha_crit_t) * 100), "% CIs.\n",
+        "Green = positive, Red = negative, Black = crosses zero."
+      )
     ) +
     ggplot2::theme(
       plot.title   = ggplot2::element_text(hjust = 0.5),

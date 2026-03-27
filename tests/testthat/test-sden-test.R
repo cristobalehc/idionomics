@@ -98,6 +98,26 @@ test_that("sden_test errors when feature column is missing", {
                "not found")
 })
 
+test_that("alpha_arimax = 0 triggers upfront error", {
+  fake <- make_fake_sden_input()
+  expect_error(sden_test(fake, alpha_arimax = 0), regexp = "alpha_arimax")
+})
+
+test_that("alpha_arimax = 1 triggers upfront error", {
+  fake <- make_fake_sden_input()
+  expect_error(sden_test(fake, alpha_arimax = 1), regexp = "alpha_arimax")
+})
+
+test_that("alpha_binom = 0 triggers upfront error", {
+  fake <- make_fake_sden_input()
+  expect_error(sden_test(fake, alpha_binom = 0), regexp = "alpha_binom")
+})
+
+test_that("alpha_binom = Inf triggers upfront error", {
+  fake <- make_fake_sden_input()
+  expect_error(sden_test(fake, alpha_binom = Inf), regexp = "alpha_binom")
+})
+
 # ── Output structure ──────────────────────────────────────────────────────────
 
 test_that("sden_test returns sden_results class", {

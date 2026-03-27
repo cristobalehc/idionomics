@@ -159,6 +159,24 @@ test_that("misspelled timevar triggers informative error", {
   )
 })
 
+test_that("min_n_subject = 0 triggers upfront error", {
+  panel <- make_tiny_loop_panel()
+  expect_error(
+    looping_machine(panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", min_n_subject = 0),
+    regexp = "min_n_subject"
+  )
+})
+
+test_that("minvar = -1 triggers upfront error", {
+  panel <- make_tiny_loop_panel()
+  expect_error(
+    looping_machine(panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", minvar = -1),
+    regexp = "minvar"
+  )
+})
+
 test_that("all subjects below min_n_subject threshold raises an error", {
   panel <- make_tiny_loop_panel()          # 5 obs per subject
   expect_error(
@@ -316,7 +334,7 @@ test_that("loop_df is a data.frame with at least one row", {
 test_that("loop_case_detail has the expected fields", {
   d <- .get_mini()$loop_case_detail
   expect_type(d, "list")
-  expect_true(all(c("n_in_loop_df", "n_complete", "n_na_indicator") %in% names(d)))
+  expect_true(all(c("n_in_loop_df", "n_complete", "n_na_indicator", "n_dropped_by_join") %in% names(d)))
 })
 
 test_that("loop_case_detail counts are internally consistent", {
@@ -491,6 +509,41 @@ test_that("all ids in loop_df appear in all three legs' results_df", {
 })
 
 
+# ── n_dropped_by_join ─────────────────────────────────────────────────────────
+
+test_that("n_dropped_by_join is positive and message emitted when a subject is absent from one leg", {
+  # Subject "5" has c = 0 (zero variance): passes a->b (needs a, b) but is
+  # filtered out of b->c (needs b, c) and c->a (needs c, a). After the inner
+  # join, subject 5 is absent from loop_df → n_dropped_by_join should be 1.
+  set.seed(42)
+  n_obs <- 25
+  base <- do.call(rbind, lapply(1:4, function(id) {
+    a  <- rnorm(n_obs); b <- 0.4 * a + rnorm(n_obs); cc <- 0.4 * b + rnorm(n_obs)
+    data.frame(id = as.character(id), time = seq_len(n_obs),
+               a = a, b = b, c = cc, stringsAsFactors = FALSE)
+  }))
+  extra <- data.frame(id = "5", time = seq_len(n_obs),
+                      a = rnorm(n_obs), b = rnorm(n_obs), c = rep(0, n_obs),
+                      stringsAsFactors = FALSE)
+  panel_drop <- rbind(base, extra)
+
+  msgs <- character(0)
+  r <- withCallingHandlers(
+    suppressWarnings(looping_machine(panel_drop, a_series = "a", b_series = "b",
+                                     c_series = "c", id_var = "id", timevar = "time")),
+    message = function(m) { msgs <<- c(msgs, conditionMessage(m)); invokeRestart("muffleMessage") }
+  )
+
+  expect_equal(r$loop_case_detail$n_dropped_by_join, 1L)
+  expect_true(any(grepl("dropped from loop_df", msgs)))
+})
+
+test_that("n_dropped_by_join is 0 when all subjects survive all three legs", {
+  r <- .get_mini()
+  expect_equal(r$loop_case_detail$n_dropped_by_join, 0L)
+})
+
+
 # ── Verbose branch coverage (no skip_on_cran) ─────────────────────────────────
 # Runs looping_machine() with verbose = TRUE to instrument the per-leg start
 # messages and the finish message.
@@ -510,7 +563,22 @@ test_that("verbose = TRUE runs without error and emits messages", {
   expect_gt(length(msgs), 1L)
 })
 
-test_that("summary message always fires and mentions 'Number of cases'", {
+test_that("summary message fires with verbose = TRUE and mentions 'Number of cases'", {
+  msgs <- character(0)
+  withCallingHandlers(
+    suppressWarnings(
+      looping_machine(mini_panel, a_series = "a", b_series = "b", c_series = "c",
+                      id_var = "id", timevar = "time", verbose = TRUE)
+    ),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+  expect_true(any(grepl("Number of cases", msgs)))
+})
+
+test_that("summary message does not fire with verbose = FALSE", {
   msgs <- character(0)
   withCallingHandlers(
     suppressWarnings(
@@ -522,7 +590,7 @@ test_that("summary message always fires and mentions 'Number of cases'", {
       invokeRestart("muffleMessage")
     }
   )
-  expect_true(any(grepl("Number of cases", msgs)))
+  expect_false(any(grepl("Number of cases", msgs)))
 })
 
 
@@ -626,7 +694,23 @@ test_that("non-NULL covariates are stored and appear as coefficient columns in a
   expect_true("estimate_cov1" %in% names(r$iarimax_c_to_a$results_df))
 })
 
-test_that("summary message always fires regardless of verbose", {
+test_that("summary message fires with verbose = TRUE (real panel)", {
+  skip_on_cran()
+  msgs <- character(0)
+  withCallingHandlers(
+    suppressWarnings(looping_machine(
+      panel, a_series = "a", b_series = "b", c_series = "c",
+      id_var = "id", timevar = "time", verbose = TRUE
+    )),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+  expect_true(any(grepl("Number of cases", msgs)))
+})
+
+test_that("summary message does not fire with verbose = FALSE (real panel)", {
   skip_on_cran()
   msgs <- character(0)
   withCallingHandlers(
@@ -639,7 +723,7 @@ test_that("summary message always fires regardless of verbose", {
       invokeRestart("muffleMessage")
     }
   )
-  expect_true(any(grepl("Number of cases", msgs)))
+  expect_false(any(grepl("Number of cases", msgs)))
 })
 
 test_that("verbose = TRUE emits more messages than verbose = FALSE", {

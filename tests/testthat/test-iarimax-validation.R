@@ -137,6 +137,42 @@ test_that("invalid correlation_method error names the offending value", {
 
 # ── all subjects filtered before loop ─────────────────────────────────────────
 
+# ── min_n_subject / minvar parameter validation ───────────────────────────────
+
+test_that("min_n_subject = 0 triggers upfront error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time", min_n_subject = 0),
+    regexp = "min_n_subject"
+  )
+})
+
+test_that("min_n_subject = Inf triggers upfront error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time", min_n_subject = Inf),
+    regexp = "min_n_subject"
+  )
+})
+
+test_that("minvar = -1 triggers upfront error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time", minvar = -1),
+    regexp = "minvar"
+  )
+})
+
+test_that("minvar = Inf triggers upfront error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time", minvar = Inf),
+    regexp = "minvar"
+  )
+})
+
+# ── all subjects filtered before loop ─────────────────────────────────────────
+
 test_that("all subjects below min_n_subject threshold raises an error", {
   tiny <- data.frame(
     id   = rep(c("a", "b"), each = 5),

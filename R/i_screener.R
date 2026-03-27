@@ -12,13 +12,14 @@
 #' @param df A dataframe. Any existing grouping is removed before processing.
 #' @param cols A non-empty character vector of column names to screen.
 #' @param idvar A string naming the ID variable (one variable only).
-#' @param min_n Integer. Subjects with fewer than `min_n` non-`NA` observations
-#'   in a given column fail this criterion. Defaults to `20`, matching
-#'   [iarimax()]'s default threshold.
+#' @param min_n_subject Integer. Subjects with fewer than `min_n_subject`
+#'   non-`NA` observations in a given column fail this criterion. Defaults to
+#'   `20`, matching [iarimax()]'s default threshold.
 #' @param min_sd Numeric or `NULL`. If provided, subjects whose within-person SD
 #'   for a given column is below `min_sd` (in raw units) fail this criterion.
-#'   `NULL` (default) skips this check. Use this before [pmstandardize()] to
-#'   exclude floor/ceiling responders and near-constant series.
+#'   Must be a finite positive number. `NULL` (default) skips this check. Use
+#'   this before [pmstandardize()] to exclude floor/ceiling responders and
+#'   near-constant series.
 #' @param max_mode_pct Numeric in `(0, 1]` or `NULL`. If provided, subjects for
 #'   whom more than `max_mode_pct` of their non-`NA` responses fall on the same
 #'   value fail this criterion. Computed as
@@ -55,7 +56,7 @@
 #'   internally, so values are compared as characters; best suited to
 #'   integer or Likert-scale data where floating-point rounding is not a concern.
 #'
-#' Criteria are applied in order: `min_n`, then `min_sd`, then `max_mode_pct`.
+#' Criteria are applied in order: `min_n_subject`, then `min_sd`, then `max_mode_pct`.
 #' A subject-column fails as soon as any active criterion is not met.
 #'
 #' When `filter_type = "per_column"` and `mode = "filter"`, failing subjects
@@ -102,7 +103,7 @@
 #'   )
 #' }))
 #'
-#' # Remove subjects failing default min_n = 20 or a minimum SD criterion
+#' # Remove subjects failing default min_n_subject = 20 or a minimum SD criterion
 #' result <- i_screener(panel, cols = c("x", "y"), idvar = "id", min_sd = 0.5)
 #'
 #' # Inspect which subjects would be removed without committing
@@ -116,8 +117,8 @@
 #' print(report)
 
 i_screener <- function(df, cols, idvar,
-                     min_n        = 20,
-                     min_sd       = NULL,
+                     min_n_subject = 20,
+                     min_sd        = NULL,
                      max_mode_pct = NULL,
                      filter_type  = "joint",
                      mode         = "filter",
@@ -126,6 +127,10 @@ i_screener <- function(df, cols, idvar,
   # Guard: cols must be non-empty.
   if (length(cols) == 0) {
     stop("'cols' must contain at least one column name.")
+  }
+
+  if (!is.character(idvar) || length(idvar) != 1) {
+    stop("'idvar' must be a single character string.")
   }
 
   # Check if the provided variables are in the dataframe.
@@ -139,11 +144,13 @@ i_screener <- function(df, cols, idvar,
   }
 
   # Validate threshold parameters.
-  if (!is.numeric(min_n) || is.na(min_n) || !is.finite(min_n) || length(min_n) != 1 || min_n < 1) {
-    stop("'min_n' must be a finite positive integer.")
+  if (!is.numeric(min_n_subject) || length(min_n_subject) != 1 ||
+      !is.finite(min_n_subject) || min_n_subject < 1) {
+    stop("'min_n_subject' must be a finite positive number.")
   }
-  if (!is.null(min_sd) && (!is.numeric(min_sd) || is.na(min_sd) || length(min_sd) != 1 || min_sd <= 0)) {
-    stop("'min_sd' must be a positive number.")
+  if (!is.null(min_sd) && (!is.numeric(min_sd) || length(min_sd) != 1 ||
+      !is.finite(min_sd) || min_sd <= 0)) {
+    stop("'min_sd' must be a finite positive number.")
   }
   if (!is.null(max_mode_pct) && (!is.numeric(max_mode_pct) || length(max_mode_pct) != 1 ||
       max_mode_pct <= 0 || max_mode_pct > 1)) {
@@ -183,7 +190,7 @@ i_screener <- function(df, cols, idvar,
   # Provide explanation, conditional to verbose = TRUE.
   if (verbose) {
     message("i_screener applies per-subject data quality filters.")
-    message("   min_n        : subjects need >= ", min_n, " non-NA observations per variable.")
+    message("   min_n_subject: subjects need >= ", min_n_subject, " non-NA observations per variable.")
     if (!is.null(min_sd)) {
       message("   min_sd       : subjects need within-person SD >= ", min_sd, " per variable.")
     }
@@ -226,7 +233,7 @@ i_screener <- function(df, cols, idvar,
     mode_col <- paste0(col, "_mode_pct")
     pass_col <- paste0(col, "_pass")
 
-    col_pass <- metrics[[n_col]] >= min_n
+    col_pass <- metrics[[n_col]] >= min_n_subject
 
     if (!is.null(min_sd)) {
       col_pass <- col_pass & !is.na(metrics[[sd_col]]) & (metrics[[sd_col]] >= min_sd)

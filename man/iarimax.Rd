@@ -61,10 +61,13 @@ from the fitted Arima object via \code{stats::nobs()}),
 \code{n_params} (number of model coefficients), and \code{raw_cor}
 (pairwise correlation between the focal predictor and
 \code{y_series}, not partialled for other predictors in
-\code{x_series}). Subjects
-whose \code{auto.arima()} call failed appear as rows of \code{NA}s;
-their IDs are also listed in
-\code{case_number_detail$error_arimax_skipped}.}
+\code{x_series}). Subjects whose \code{auto.arima()} call failed
+appear with \code{NA} for all model statistics (\code{nAR},
+\code{nI}, \code{nMA}, \code{n_valid}, \code{n_params}, and all
+coefficient/SE columns), but retain a valid \code{raw_cor} if the
+correlation step succeeded before the model failure. \code{raw_cor}
+is \code{NA} only if \code{cor.test()} also failed. Their IDs are
+listed in \code{case_number_detail$error_arimax_skipped}.}
 \item{meta_analysis}{A \code{metafor::rma} object from a random-effects
 meta-analysis on the focal predictor coefficients, or \code{NULL} if
 the meta-analysis failed (e.g. fewer than two valid estimates).}

@@ -8,7 +8,7 @@ i_screener(
   df,
   cols,
   idvar,
-  min_n = 20,
+  min_n_subject = 20,
   min_sd = NULL,
   max_mode_pct = NULL,
   filter_type = "joint",
@@ -23,14 +23,15 @@ i_screener(
 
 \item{idvar}{A string naming the ID variable (one variable only).}
 
-\item{min_n}{Integer. Subjects with fewer than \code{min_n} non-\code{NA} observations
-in a given column fail this criterion. Defaults to \code{20}, matching
-\code{\link[=iarimax]{iarimax()}}'s default threshold.}
+\item{min_n_subject}{Integer. Subjects with fewer than \code{min_n_subject}
+non-\code{NA} observations in a given column fail this criterion. Defaults to
+\code{20}, matching \code{\link[=iarimax]{iarimax()}}'s default threshold.}
 
 \item{min_sd}{Numeric or \code{NULL}. If provided, subjects whose within-person SD
 for a given column is below \code{min_sd} (in raw units) fail this criterion.
-\code{NULL} (default) skips this check. Use this before \code{\link[=pmstandardize]{pmstandardize()}} to
-exclude floor/ceiling responders and near-constant series.}
+Must be a finite positive number. \code{NULL} (default) skips this check. Use
+this before \code{\link[=pmstandardize]{pmstandardize()}} to exclude floor/ceiling responders and
+near-constant series.}
 
 \item{max_mode_pct}{Numeric in \verb{(0, 1]} or \code{NULL}. If provided, subjects for
 whom more than \code{max_mode_pct} of their non-\code{NA} responses fall on the same
@@ -97,7 +98,7 @@ internally, so values are compared as characters; best suited to
 integer or Likert-scale data where floating-point rounding is not a concern.
 }
 
-Criteria are applied in order: \code{min_n}, then \code{min_sd}, then \code{max_mode_pct}.
+Criteria are applied in order: \code{min_n_subject}, then \code{min_sd}, then \code{max_mode_pct}.
 A subject-column fails as soon as any active criterion is not met.
 
 When \code{filter_type = "per_column"} and \code{mode = "filter"}, failing subjects
@@ -135,7 +136,7 @@ panel <- do.call(rbind, lapply(1:4, function(id) {
   )
 }))
 
-# Remove subjects failing default min_n = 20 or a minimum SD criterion
+# Remove subjects failing default min_n_subject = 20 or a minimum SD criterion
 result <- i_screener(panel, cols = c("x", "y"), idvar = "id", min_sd = 0.5)
 
 # Inspect which subjects would be removed without committing

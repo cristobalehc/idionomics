@@ -53,7 +53,7 @@ A named list:
 \item{alpha}{Significance threshold used.}
 \item{covariates}{Covariate vector (NULL if none).}
 \item{include_third_as_covariate}{Logical; whether the third variable was added as a covariate.}
-\item{loop_case_detail}{List with \code{n_in_loop_df}, \code{n_complete}, and \code{n_na_indicator} (subjects with a failed model in any leg).}
+\item{loop_case_detail}{List with \code{n_in_loop_df}, \code{n_complete}, \code{n_na_indicator} (subjects with a failed model in any leg), and \code{n_dropped_by_join} (subjects present in at least one leg but dropped from \code{loop_df} because they were absent from another leg due to filtering or model failure).}
 \item{iarimax_a_to_b,iarimax_b_to_c,iarimax_c_to_a}{\code{iarimax_results} objects for each leg, with \code{i_pval} already applied.}
 }
 }

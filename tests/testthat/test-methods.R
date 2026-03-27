@@ -266,6 +266,22 @@ test_that("plot.iarimax_results still produces a plot when meta_analysis is NULL
   expect_s3_class(plot(r), "ggplot")
 })
 
+test_that("plot.iarimax_results y-axis and caption reflect custom alpha_crit_t", {
+  skip_if_not_installed("ggplot2")
+  r <- make_fake_iarimax()
+  p <- plot(r, alpha_crit_t = 0.01)
+  expect_match(p$labels$y,       "99%")
+  expect_match(p$labels$caption, "99%")
+})
+
+test_that("plot.iarimax_results default alpha_crit_t uses 95% in y-axis and caption", {
+  skip_if_not_installed("ggplot2")
+  r <- make_fake_iarimax()
+  p <- plot(r)
+  expect_match(p$labels$y,       "95%")
+  expect_match(p$labels$caption, "95%")
+})
+
 # ── sden_test errors when meta_analysis is NULL ───────────────────────────────
 
 test_that("sden_test stops with informative error when meta_analysis is NULL", {
@@ -290,5 +306,5 @@ test_that("sden_test stops with informative error when meta_analysis is NULL", {
   attr(fake, "id_var")          <- "id"
   attr(fake, "timevar")         <- "time"
 
-  expect_error(suppressMessages(sden_test(fake)), regexp = "SDEN test stopped")
+  expect_error(suppressMessages(sden_test(fake)), regexp = "meta_analysis")
 })

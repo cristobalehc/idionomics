@@ -49,6 +49,14 @@ test_that("error message includes 'Cannot find required variables'", {
   )
 })
 
+test_that("idvar as a vector triggers error", {
+  df <- make_pms_df()
+  expect_error(
+    pmstandardize(df, cols = "x", idvar = c("id", "id")),
+    regexp = "idvar"
+  )
+})
+
 test_that("empty cols vector triggers error", {
   df <- make_pms_df()
   expect_error(

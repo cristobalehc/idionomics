@@ -77,6 +77,21 @@ i_detrender <- function(df, cols, idvar, timevar,
     stop("'cols' must contain at least one column name.")
   }
 
+  if (!is.character(idvar) || length(idvar) != 1) {
+    stop("'idvar' must be a single character string.")
+  }
+  if (!is.character(timevar) || length(timevar) != 1) {
+    stop("'timevar' must be a single character string.")
+  }
+  if (!is.numeric(min_n_subject) || length(min_n_subject) != 1 ||
+      !is.finite(min_n_subject) || min_n_subject < 1) {
+    stop("'min_n_subject' must be a finite positive number.")
+  }
+  if (!is.numeric(minvar) || length(minvar) != 1 ||
+      !is.finite(minvar) || minvar < 0) {
+    stop("'minvar' must be a finite non-negative number.")
+  }
+
   # Check if the provided variables are in the dataframe
   required_vars <- c(cols, idvar, timevar)
 

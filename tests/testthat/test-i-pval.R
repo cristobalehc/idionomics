@@ -142,6 +142,12 @@ test_that("i_pval errors when feature column is missing", {
                "not found")
 })
 
+test_that("i_pval errors when feature is a vector", {
+  fake <- make_fake_iarimax()
+  expect_error(i_pval(fake, feature = c("x", "y")),
+               "feature")
+})
+
 test_that("i_pval errors when std.error column is absent but estimate column exists", {
   # Exercises the second stop() guard (lines 30-32): estimate_x exists but
   # std.error_x has been removed, so only the SE check fires.

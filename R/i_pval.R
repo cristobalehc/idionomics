@@ -41,6 +41,10 @@ i_pval <- function(iarimax_object, feature = NULL) {
     feature <- attr(iarimax_object, "focal_predictor")
   }
 
+  if (!is.character(feature) || length(feature) != 1) {
+    stop("'feature' must be a single character string.")
+  }
+
   #Construct the column names based on the 'feature' argument
   feature_name <- paste0("estimate_", feature)
   std_feature_name <- paste0("std.error_", feature)

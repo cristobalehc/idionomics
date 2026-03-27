@@ -7,8 +7,15 @@
 #' @export
 #'
 #' @param iarimax_object Your iarimax object.
-#' @param alpha_arimax Critical value for arimax parameter significance. Defaults to 0.05.
-#' @param alpha_binom Critical value for binomial test. Defaults to alpha_arimax for ENT, and alpha_arimax/2 for SDT
+#' @param alpha_arimax Critical value for per-subject ARIMAX coefficient significance. Defaults to 0.05.
+#'   In ENT mode this value serves double duty: it is both the threshold for counting a subject's
+#'   effect as significant (numerator) and the null probability for the binomial test (denominator).
+#'   Raising it simultaneously increases the count of significant effects and raises the null
+#'   expectation against which they are tested. Use \code{alpha_binom} to set the binomial null
+#'   probability independently if you need to decouple the two.
+#' @param alpha_binom Null probability for the binomial test. Defaults to \code{alpha_arimax} for
+#'   ENT and \code{alpha_arimax / 2} for SDT. Supply this to override the default without changing
+#'   the per-subject significance threshold.
 #' @param test Type of test, default to "auto". "auto", "SDT", and "ENT" are supported.
 #'   When `"auto"`, the selection between SDT and ENT is based on whether the pooled REMA
 #'   effect is statistically significant at a **fixed threshold of 0.05**, regardless of
@@ -61,6 +68,16 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
     stop('Invalid test type. Supported tests are "auto", "SDT", and "ENT".')
   }
 
+  if (!is.numeric(alpha_arimax) || length(alpha_arimax) != 1 ||
+      !is.finite(alpha_arimax) || alpha_arimax <= 0 || alpha_arimax >= 1) {
+    stop("'alpha_arimax' must be a single finite number in (0, 1).")
+  }
+  if (!is.null(alpha_binom) &&
+      (!is.numeric(alpha_binom) || length(alpha_binom) != 1 ||
+       !is.finite(alpha_binom) || alpha_binom <= 0 || alpha_binom >= 1)) {
+    stop("'alpha_binom' must be a single finite number in (0, 1), or NULL.")
+  }
+
   #Defaults to focal predictor if feature is null.
   if (is.null(feature)) {
     feature <- attr(iarimax_object, "focal_predictor")
@@ -98,7 +115,9 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
 
   #Stop if meta analysis is null.
   if (is.null(iarimax_object$meta_analysis)) {
-    stop('SDEN test stopped.')
+    stop("sden_test requires a valid meta_analysis in the iarimax object, but it is NULL. ",
+         "This happens when fewer than 2 subjects have valid model estimates. ",
+         "Check your iarimax output before calling sden_test().")
   }
 
   # Get REMA parameters.

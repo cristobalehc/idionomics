@@ -61,6 +61,10 @@ pmstandardize <- function(df, cols, idvar, verbose = FALSE, append = TRUE) {
     stop("'cols' must contain at least one column name.")
   }
 
+  if (!is.character(idvar) || length(idvar) != 1) {
+    stop("'idvar' must be a single character string.")
+  }
+
   # Check if the provided variables are in the dataframe
   required_vars <- c(cols, idvar)
 
