@@ -21,6 +21,15 @@
 #' @param timevar A string naming the column used to sort observations into
 #'   chronological order within each subject. Must be complete (no missing
 #'   values).
+#' @param fixed_d Optional non-negative integer. If provided, fixes the
+#'   differencing order to this value for every subject instead of letting
+#'   \code{auto.arima()} select it. \code{NULL} (default) means automatic
+#'   selection. Fixing \code{d} ensures all subjects' coefficients are on
+#'   the same scale (e.g., \code{d = 0} for levels, \code{d = 1} for
+#'   changes), which is important for comparability in the meta-analysis.
+#'   AR (\code{p}) and MA (\code{q}) orders are always selected
+#'   automatically per subject because they control error autocorrelation
+#'   and do not affect the scale of the xreg coefficients.
 #' @param correlation_method Select method for raw correlations. Options are: 'spearman', 'pearson' or 'kendall'. Defaults to 'pearson'.
 #' @param keep_models If TRUE, will keep original arimax models in a list.
 #' @param verbose If TRUE, prints progress messages during filtering and model fitting. Defaults to FALSE.
@@ -90,7 +99,7 @@
 #####################################
 
 iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_series,
-                    focal_predictor = NULL, id_var, timevar,
+                    focal_predictor = NULL, id_var, timevar, fixed_d = NULL,
                     correlation_method = 'pearson', keep_models = FALSE, verbose = FALSE) {
 
   # Check wether variables are in the in the dataset.
@@ -103,6 +112,14 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
   if (!is.numeric(minvar) || length(minvar) != 1 ||
       !is.finite(minvar) || minvar < 0) {
     stop("'minvar' must be a finite non-negative number.")
+  }
+
+  if (!is.null(fixed_d)) {
+    if (!is.numeric(fixed_d) || length(fixed_d) != 1 ||
+        !is.finite(fixed_d) || fixed_d < 0 || fixed_d != round(fixed_d)) {
+      stop("'fixed_d' must be a single non-negative integer (e.g., 0 or 1).")
+    }
+    fixed_d <- as.integer(fixed_d)
   }
 
   if (!correlation_method %in% c("pearson","spearman","kendall")) {
@@ -207,7 +224,10 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
     #Update case number.
     casen <- casen + 1
 
-    if (verbose) message('  Applying auto ARIMAX to case: ', i, ' ... ', appendLF = FALSE) # appendLF = FALSE keeps cursor on same line so the completion percentage prints right after.
+    if (verbose) {
+      d_label <- if (is.null(fixed_d)) "auto" else paste0("d=", fixed_d)
+      message('  Applying ARIMAX (', d_label, ') to case: ', i, ' ... ', appendLF = FALSE)
+    }
 
     #Extract the current subject & arrange timeseries by timevar.
     subject_n <- dataframe |>
@@ -261,7 +281,7 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
 
     model <- tryCatch(
       {
-        forecast::auto.arima(y = y_vector, xreg = x_matrix, approximation = FALSE, stepwise = FALSE)
+        forecast::auto.arima(y = y_vector, xreg = x_matrix, d = if (is.null(fixed_d)) NA else fixed_d, approximation = FALSE, stepwise = FALSE)
       },
       error = function(e) {
         message('\nError running ARIMAX model for case: ', i, '\n  ', e$message)

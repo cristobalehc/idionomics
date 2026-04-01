@@ -171,6 +171,32 @@ test_that("minvar = Inf triggers upfront error", {
   )
 })
 
+# ── fixed_d validation ───────────────────────────────────────────────────────
+
+test_that("fixed_d = -1 triggers upfront error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time", fixed_d = -1),
+    regexp = "fixed_d"
+  )
+})
+
+test_that("fixed_d = 1.5 triggers upfront error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time", fixed_d = 1.5),
+    regexp = "fixed_d"
+  )
+})
+
+test_that("fixed_d = 'a' triggers upfront error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time", fixed_d = "a"),
+    regexp = "fixed_d"
+  )
+})
+
 # ── all subjects filtered before loop ─────────────────────────────────────────
 
 test_that("all subjects below min_n_subject threshold raises an error", {

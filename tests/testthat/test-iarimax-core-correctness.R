@@ -189,6 +189,29 @@ test_that("REMA sampling variances equal std.error_x squared", {
   )
 })
 
+# ── fixed_d ───────────────────────────────────────────────────────────────────
+
+test_that("fixed_d = 0 forces nI = 0 for all subjects", {
+  skip_on_cran()
+  result_d0 <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
+                       id_var = "id", timevar = "time", fixed_d = 0)
+  expect_true(all(result_d0$results_df$nI == 0, na.rm = TRUE))
+})
+
+test_that("fixed_d = 1 forces nI = 1 for all subjects", {
+  skip_on_cran()
+  result_d1 <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
+                       id_var = "id", timevar = "time", fixed_d = 1)
+  expect_true(all(result_d1$results_df$nI == 1, na.rm = TRUE))
+})
+
+test_that("fixed_d = NULL allows varying nI across subjects", {
+  result <- .get_result()
+  # This is not guaranteed to vary with 3 subjects, but we verify it runs
+  # and nI contains valid values
+  expect_true(all(result$results_df$nI >= 0, na.rm = TRUE))
+})
+
 # ── Signal recovery ───────────────────────────────────────────────────────────
 # The true xreg coefficient in make_panel is 0.5. With enough subjects and
 # observations the REMA pooled estimate should recover it.
