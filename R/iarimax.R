@@ -183,7 +183,7 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
 
 
   #Subset only relevant features.
-  dataframe <- dataframe[, required_vars, drop = FALSE]
+  dataframe <- dataframe[, required_vars, drop = FALSE] #Important to keep dataframe for named matrix.
 
   if (verbose) message('Filtering data based on minimum non-NA observations and variance...')
 
@@ -200,7 +200,9 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
     ) |>
     dplyr::filter(count >= min_n_subject,
                   dplyr::if_all(dplyr::starts_with("var_"), ~ .x >= minvar)) |> #y and all predictors must meet minvar.
-    dplyr::pull(!!id_var_sym) #Filter data.
+    dplyr::pull(!!id_var_sym) #Filter ids.
+    #Note: This filter will extract subjects with minimum requirements, but won't filter the dataframe. The resulting data
+    #to be used can contain NA's in different columns, but the minimum requirement is met.
 
   #ID as character, to avoid giant lists.
   subjects <- as.character(subjects)
@@ -222,10 +224,10 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
   n_params <- list()
 
   #Exclude cases where arimax don't work.
-  exclude <- character(0)
+  exclude <- character(0) #empty character vector.
 
   #Model lists.
-  arimax_models <- list()
+  arimax_models <- list() #Initialized, conditional guard to avoid cluttering memory if keep_models = FALSE comes later.
   tidy_models <- list()
   raw_correlation <- list()
   AR_N <- list()
@@ -235,19 +237,21 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
 
   #Start case number counter.
   casen <- 0
+
+  #Initialize arimax loop, case by case.
   for(i in subjects) {
 
     #Update case number.
     casen <- casen + 1
 
     if (verbose) {
-      d_label <- if (is.null(fixed_d)) "auto" else paste0("d=", fixed_d)
+      d_label <- if (is.null(fixed_d)) "auto d" else paste0("d = ", fixed_d)
       message('  Applying ARIMAX (', d_label, ') to case: ', i, ' ... ', appendLF = FALSE)
     }
 
     #Extract the current subject & arrange timeseries by timevar.
     subject_n <- dataframe |>
-      dplyr::filter(!!id_var_sym == i) |>
+      dplyr::filter(!!id_var_sym == i) |> #Only using filtered cases.
       dplyr::arrange(!!timevar_sym) #Ensure time-series order.
 
     ##########################################
@@ -255,7 +259,7 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
     #########################################
 
     # Note: We do NOT need to manually sync NAs.
-    # stats::arima's Kalman Filter (C source) automatically treats
+    # stats::arima's Kalman Filter automatically treats
     # any row with a missing predictor as a missing observation
     # in the state-space update, preserving temporal structure.
 
@@ -316,7 +320,7 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
       tidy_models[[i]] <- NULL
       arimax_models[[i]] <- NULL
 
-      exclude <- c(exclude,i)
+      exclude <- c(exclude,i) #append failed id to the excluded list.
 
       if (verbose) message('skipped. (', round(casen / length(subjects) * 100, 1), '% done)')
       next #Skip the next part of this iteration of the loop, so it doesn't get overriden and throws an error.
@@ -324,11 +328,11 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
 
     # Remove fable's "ARIMA" class to prevent it from hijacking broom::tidy.
     class(model) <- setdiff(class(model), "ARIMA")
-    tidymodel <- broom::tidy(model)
+    tidymodel <- broom::tidy(model) #long format.
 
     #Add id to tidy model.
     tidymodel <- tidymodel |>
-      dplyr::mutate(!!id_var_sym := i)
+      dplyr::mutate(!!id_var_sym := i) #assign id to id variable.
 
     #Fill the tidy model list.
     tidy_models[[i]] <- tidymodel
@@ -345,7 +349,7 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
     I_N[[i]] <- model$arma[6] #Fill I list.
     MA_N[[i]] <- model$arma[2] #Fill MA List.
 
-    #Fill n valid and n params. nobs() returns the n used in the model likelihood.
+    #Fill n valid and n params. nobs() returns the n used in the model likelihood, subtracting d when d > 0.
     n_valid[[i]] <- stats::nobs(model)
     n_params[[i]] <- length(model$coef)
 
@@ -363,14 +367,12 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
   if (length(tidy_list) == 0) {
     stop(
       "iarimax: all ARIMAX fits failed after filtering. ",
-      "No subject produced a valid model. ",
-      "Check (a) time ordering / timevar, (b) missingness in y/x, ",
-      "(c) min_n_subject/minvar thresholds, and (d) whether xreg has NA patterns."
+      "No subject produced a valid model."
     )
   }
 
   #Create tidy long.
-  tidy_long <- dplyr::bind_rows(tidy_list)
+  tidy_long <- dplyr::bind_rows(tidy_list) #bind rows in long format.
 
 
   # Pivot the coefficients to wide format.
@@ -392,8 +394,8 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
   raw_correlation_vector <- unlist(raw_correlation)
 
 
-  #Create individual level summaries.
-  summary_df <- tibble::tibble(
+  #Create individual level summaries. Positional alignment is guaranteed by the loop filling all lists for every subject.
+  summary_df <- tibble::tibble( #Tibble to allow dynamic column naming.
     !!id_var_sym := subjects,
     nAR = AR_vector,
     nI = I_vector,
@@ -415,8 +417,8 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
 
   #Try running the random effects meta analysis.
 
-  focal_est_col <- paste0("estimate_",  focal_predictor)
-  focal_se_col  <- paste0("std.error_", focal_predictor)
+  focal_est_col <- paste0("estimate_",  focal_predictor) #build focal predictor estimate name.
+  focal_se_col  <- paste0("std.error_", focal_predictor) #build focal predictor sd name.
 
   meta_analysis <-
     tryCatch(
@@ -440,7 +442,7 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
   #Add class to identify the object.
   class(final_obj) <- c("iarimax_results", "list")
 
-  #Add attribute to identify focal predictor, and id_var.
+  #Add attribute to identify outcome, focal predictor, id_var, and timevar.
   attr(final_obj, "outcome") <- y_series
   attr(final_obj, "focal_predictor") <- focal_predictor
   attr(final_obj, "id_var") <- id_var
