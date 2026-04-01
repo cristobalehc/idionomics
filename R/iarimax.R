@@ -13,14 +13,16 @@
 #'   \code{auto.arima()} applies differencing. Defaults to 20.
 #' @param minvar Numeric. Each series (\code{y_series} and every variable in
 #'   \code{x_series}) must have variance \code{>= minvar}; subjects failing
-#'   this for any series are excluded. Defaults to 0.01.
+#'   this for any series are excluded. Defaults to 0.01. Person-mean standardizing
+#'   variables will make this parameter irrelevant, as var == 1 under z standardization.
 #' @param y_series A string containing the name of your dependent variable y.
 #' @param x_series A character vector containing the name(s) of your predictor variable(s).
-#' @param focal_predictor A string with the name of the predictor to use in the meta-analysis. Required when x_series has more than one variable. When x_series is a single variable, defaults to that variable.
+#' @param focal_predictor A string with the name of the predictor to use in the meta-analysis.
+#'  Required when x_series has more than one variable. When x_series is a single variable, defaults to that variable.
 #' @param id_var A string containing your id variable.
 #' @param timevar A string naming the column used to sort observations into
 #'   chronological order within each subject. Must be complete (no missing
-#'   values).
+#'   values) and numeric.
 #' @param fixed_d Optional non-negative integer. If provided, fixes the
 #'   differencing order to this value for every subject instead of letting
 #'   \code{auto.arima()} select it. \code{NULL} (default) means automatic
@@ -129,6 +131,14 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
   if (!all(required_vars %in% colnames(dataframe))) {
     missing_vars <- required_vars[!required_vars %in% colnames(dataframe)]
     stop(paste("Cannot find required variables. Check if you spelled the following variables correctly:", paste(missing_vars, collapse = ", ")))
+  }
+
+  # timevar must be numeric for correct temporal ordering
+  if (!is.numeric(dataframe[[timevar]])) {
+    stop(
+      "Column '", timevar, "' must be numeric. Got class: ",
+      class(dataframe[[timevar]])[1], ". Convert dates with as.numeric() before calling iarimax."
+    )
   }
 
   #Check for timevar missing data: With missings, the data cannot be arranged, so this is a really important guardrail.

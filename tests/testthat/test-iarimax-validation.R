@@ -95,6 +95,28 @@ test_that("NA in y does not trigger the timevar validation error", {
   }
 })
 
+# ── Non-numeric timevar ──────────────────────────────────────────────────────
+
+test_that("character timevar triggers informative error", {
+  bad <- panel
+  bad$time <- as.character(bad$time)
+  expect_error(
+    iarimax(dataframe = bad, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time"),
+    regexp = "must be numeric"
+  )
+})
+
+test_that("non-numeric timevar error reports the actual class", {
+  bad <- panel
+  bad$time <- as.Date("2020-01-01") + bad$time
+  expect_error(
+    iarimax(dataframe = bad, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time"),
+    regexp = "Date"
+  )
+})
+
 # ── focal_predictor validation ────────────────────────────────────────────────
 
 test_that("multiple x_series without focal_predictor triggers error", {
