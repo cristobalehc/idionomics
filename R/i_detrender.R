@@ -105,6 +105,14 @@ i_detrender <- function(df, cols, idvar, timevar,
     ))
   }
 
+  # timevar must be numeric for a meaningful linear trend
+  if (!is.numeric(df[[timevar]])) {
+    stop(
+      "Column '", timevar, "' must be numeric for linear detrending. Got class: ",
+      class(df[[timevar]])[1], ". Convert dates with as.numeric() before calling i_detrender."
+    )
+  }
+
   # Check for NA in timevar: required for correct temporal ordering in lm
   n_missing_timevar <- sum(is.na(df[[timevar]]))
   if (n_missing_timevar > 0) {

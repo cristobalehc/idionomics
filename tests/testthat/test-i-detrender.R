@@ -97,6 +97,24 @@ test_that("minvar = -1 triggers upfront error", {
   )
 })
 
+test_that("non-numeric timevar triggers error naming the class", {
+  df <- make_det_df()
+  df$time <- as.character(df$time)
+  expect_error(
+    i_detrender(df, cols = "x", idvar = "id", timevar = "time"),
+    regexp = "must be numeric"
+  )
+})
+
+test_that("Date timevar triggers error suggesting as.numeric()", {
+  df <- make_det_df()
+  df$time <- as.Date("2024-01-01") + df$time
+  expect_error(
+    i_detrender(df, cols = "x", idvar = "id", timevar = "time"),
+    regexp = "as.numeric"
+  )
+})
+
 test_that("single NA in timevar triggers error reporting the count", {
   df         <- make_det_df()
   df$time[1] <- NA
