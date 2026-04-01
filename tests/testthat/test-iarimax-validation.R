@@ -133,7 +133,15 @@ test_that("focal_predictor with length > 1 triggers error", {
   expect_error(
     iarimax(dataframe = panel, y_series = "y", x_series = "x",
             focal_predictor = c("x", "x"), id_var = "id", timevar = "time"),
-    regexp = "single variable name"
+    regexp = "single character string"
+  )
+})
+
+test_that("numeric focal_predictor triggers error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            focal_predictor = 1, id_var = "id", timevar = "time"),
+    regexp = "single character string"
   )
 })
 

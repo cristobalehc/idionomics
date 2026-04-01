@@ -152,8 +152,10 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
   }
 
   # Resolve focal_predictor: default to x_series when only one predictor is given.
-  if (!is.null(focal_predictor) && length(focal_predictor) != 1) {
-    stop("'focal_predictor' must be a single variable name, not a vector of length ", length(focal_predictor), ".")
+  if (!is.null(focal_predictor)) {
+    if (!is.character(focal_predictor) || length(focal_predictor) != 1) {
+      stop("'focal_predictor' must be a single character string naming one of the x_series variables.")
+    }
   }
 
   if (is.null(focal_predictor)) {
