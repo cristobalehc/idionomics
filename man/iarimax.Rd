@@ -13,6 +13,7 @@ iarimax(
   focal_predictor = NULL,
   id_var,
   timevar,
+  fixed_d = NULL,
   correlation_method = "pearson",
   keep_models = FALSE,
   verbose = FALSE
@@ -43,6 +44,16 @@ this for any series are excluded. Defaults to 0.01.}
 \item{timevar}{A string naming the column used to sort observations into
 chronological order within each subject. Must be complete (no missing
 values).}
+
+\item{fixed_d}{Optional non-negative integer. If provided, fixes the
+differencing order to this value for every subject instead of letting
+\code{auto.arima()} select it. \code{NULL} (default) means automatic
+selection. Fixing \code{d} ensures all subjects' coefficients are on
+the same scale (e.g., \code{d = 0} for levels, \code{d = 1} for
+changes), which is important for comparability in the meta-analysis.
+AR (\code{p}) and MA (\code{q}) orders are always selected
+automatically per subject because they control error autocorrelation
+and do not affect the scale of the xreg coefficients.}
 
 \item{correlation_method}{Select method for raw correlations. Options are: 'spearman', 'pearson' or 'kendall'. Defaults to 'pearson'.}
 

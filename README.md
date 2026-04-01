@@ -146,13 +146,13 @@ head(panel_dt)
 
 ```r
 iarimax(dataframe, y_series, x_series, id_var, timevar,
-        focal_predictor = NULL,
+        focal_predictor = NULL, fixed_d = NULL,
         min_n_subject = 20, minvar = 0.01,
         correlation_method = "pearson",
         keep_models = FALSE, verbose = FALSE)
 ```
 
-Fits one `auto.arima()` model per subject, extracts coefficients via `broom::tidy()`, and pools the focal predictor's coefficients with `metafor::rma()`.
+Fits one `auto.arima()` model per subject, extracts coefficients via `broom::tidy()`, and pools the focal predictor's coefficients with `metafor::rma()`. The `fixed_d` argument optionally fixes the differencing order across all subjects to ensure coefficients are on the same scale (e.g., `fixed_d = 0` for levels, `fixed_d = 1` for changes); AR and MA orders are always selected automatically per subject.
 
 ```r
 result <- iarimax(panel_dt,
