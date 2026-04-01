@@ -52,7 +52,7 @@
 #'     coefficient/SE columns), but retain a valid \code{raw_cor} if the
 #'     correlation step succeeded before the model failure. \code{raw_cor}
 #'     is \code{NA} only if \code{cor.test()} also failed. Their IDs are
-#'     listed in \code{case_number_detail$error_arimax_skipped}.}
+#'     listed in \code{case_number_detail$error_arimax_skipped} if auto.arima fails.}
 #'   \item{meta_analysis}{A \code{metafor::rma} object from a random-effects
 #'     meta-analysis on the focal predictor coefficients, or \code{NULL} if
 #'     the meta-analysis failed (e.g. fewer than two valid estimates).}
@@ -104,7 +104,7 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
                     focal_predictor = NULL, id_var, timevar, fixed_d = NULL,
                     correlation_method = 'pearson', keep_models = FALSE, verbose = FALSE) {
 
-  # Check wether variables are in the in the dataset.
+  # Check whether variables are in the dataset.
   required_vars <- c(y_series, x_series, id_var, timevar)
 
   if (!is.numeric(min_n_subject) || length(min_n_subject) != 1 ||
@@ -137,21 +137,25 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
   if (!is.numeric(dataframe[[timevar]])) {
     stop(
       "Column '", timevar, "' must be numeric. Got class: ",
-      class(dataframe[[timevar]])[1], ". Convert dates with as.numeric() before calling iarimax."
+      class(dataframe[[timevar]])[1], ". Convert dates or other formats to a reasonable numeric value before calling iarimax."
     )
   }
 
-  #Check for timevar missing data: With missings, the data cannot be arranged, so this is a really important guardrail.
+  #Check for timevar missing data: With missings, the data cannot be arranged.
   n_missing_timevar <- sum(is.na(dataframe[[timevar]]))
   if (n_missing_timevar > 0) {
     stop(
       n_missing_timevar, " row(s) have missing values in the time variable '", timevar, "'. ",
       "iarimax requires a non-missing timevar for every observation to ensure correct temporal ordering. ",
-      "Please review, remove or impute these rows before running iarimax."
+      "Please review these rows and process accordingly before running iarimax."
     )
   }
 
   # Resolve focal_predictor: default to x_series when only one predictor is given.
+  if (!is.null(focal_predictor) && length(focal_predictor) != 1) {
+    stop("'focal_predictor' must be a single variable name, not a vector of length ", length(focal_predictor), ".")
+  }
+
   if (is.null(focal_predictor)) {
     if (length(x_series) == 1) {
       focal_predictor <- x_series

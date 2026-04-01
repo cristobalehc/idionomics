@@ -129,6 +129,14 @@ test_that("multiple x_series without focal_predictor triggers error", {
   )
 })
 
+test_that("focal_predictor with length > 1 triggers error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            focal_predictor = c("x", "x"), id_var = "id", timevar = "time"),
+    regexp = "single variable name"
+  )
+})
+
 test_that("focal_predictor not in x_series triggers error", {
   panel2 <- panel
   panel2$x2 <- rnorm(nrow(panel))
