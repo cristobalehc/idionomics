@@ -257,9 +257,16 @@ i_screener <- function(df, cols, idvar,
   if (verbose) {
     n_pass <- sum(metrics$pass_overall)
     n_fail <- n_subjects_original - n_pass
+    if (length(cols) == 1) {
+      fail_label <- "Subjects failing at least one criterion"
+      pass_label <- "Subjects passing all criteria"
+    } else {
+      fail_label <- "Subjects failing at least one criterion across variables"
+      pass_label <- "Subjects passing all criteria on all variables"
+    }
     message("   Subjects before screening : ", n_subjects_original)
-    message("   Subjects failing criteria : ", n_fail)
-    message("   Subjects retained         : ", n_pass)
+    message("   ", fail_label, " : ", n_fail)
+    message("   ", pass_label, " : ", n_pass)
   }
 
   # IF mode == "report", return a per-subject quality summary table.
