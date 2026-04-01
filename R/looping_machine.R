@@ -14,6 +14,8 @@
 #' @param include_third_as_covariate If TRUE, the third loop variable is added as a covariate in each leg. Note: this also applies \code{minvar} filtering to the third variable, which may silently reduce the subject count. Defaults to FALSE.
 #' @param min_n_subject Minimum pairwise-complete observations per subject. Defaults to 20.
 #' @param minvar Minimum variance required in all series to retain a subject. Defaults to 0.01.
+#' @param fixed_d Optional non-negative integer passed to \code{\link{iarimax}()}
+#'   for all three legs. See \code{\link{iarimax}()} for details.
 #' @param correlation_method Raw correlation method: 'pearson', 'spearman', or 'kendall'. Defaults to 'pearson'.
 #' @param alpha Significance threshold for the loop condition; must be in (0, 1). Defaults to 0.05.
 #' @param keep_models If TRUE, raw ARIMAX objects are kept in each leg's result. Defaults to FALSE.
@@ -74,6 +76,7 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
                             covariates = NULL,
                             include_third_as_covariate = FALSE,
                             min_n_subject = 20, minvar = 0.01,
+                            fixed_d = NULL,
                             correlation_method = 'pearson',
                             alpha = 0.05,
                             keep_models = FALSE,
@@ -137,7 +140,7 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
   if (verbose) message('Calculating a to b: From ', a_series, ' to ', b_series, '...')
   a_to_b <- iarimax(dataframe, min_n_subject = min_n_subject, minvar = minvar,
                     y_series = b_series, x_series = x_ab, focal_predictor = a_series,
-                    id_var = id_var, timevar = timevar,
+                    id_var = id_var, timevar = timevar, fixed_d = fixed_d,
                     correlation_method = correlation_method,
                     keep_models = keep_models, verbose = verbose)
   a_to_b <- i_pval(a_to_b, feature = a_series)
@@ -146,7 +149,7 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
   if (verbose) message('Calculating b to c: From ', b_series, ' to ', c_series, '...')
   b_to_c <- iarimax(dataframe, min_n_subject = min_n_subject, minvar = minvar,
                     y_series = c_series, x_series = x_bc, focal_predictor = b_series,
-                    id_var = id_var, timevar = timevar,
+                    id_var = id_var, timevar = timevar, fixed_d = fixed_d,
                     correlation_method = correlation_method,
                     keep_models = keep_models, verbose = verbose)
   b_to_c <- i_pval(b_to_c, feature = b_series)
@@ -155,7 +158,7 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
   if (verbose) message('Calculating c to a: From ', c_series, ' to ', a_series, '...')
   c_to_a <- iarimax(dataframe, min_n_subject = min_n_subject, minvar = minvar,
                     y_series = a_series, x_series = x_ca, focal_predictor = c_series,
-                    id_var = id_var, timevar = timevar,
+                    id_var = id_var, timevar = timevar, fixed_d = fixed_d,
                     correlation_method = correlation_method,
                     keep_models = keep_models, verbose = verbose)
   c_to_a <- i_pval(c_to_a, feature = c_series)

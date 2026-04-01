@@ -15,6 +15,7 @@ looping_machine(
   include_third_as_covariate = FALSE,
   min_n_subject = 20,
   minvar = 0.01,
+  fixed_d = NULL,
   correlation_method = "pearson",
   alpha = 0.05,
   keep_models = FALSE,
@@ -37,6 +38,9 @@ looping_machine(
 \item{min_n_subject}{Minimum pairwise-complete observations per subject. Defaults to 20.}
 
 \item{minvar}{Minimum variance required in all series to retain a subject. Defaults to 0.01.}
+
+\item{fixed_d}{Optional non-negative integer passed to \code{\link{iarimax}()}
+for all three legs. See \code{\link{iarimax}()} for details.}
 
 \item{correlation_method}{Raw correlation method: 'pearson', 'spearman', or 'kendall'. Defaults to 'pearson'.}
 

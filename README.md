@@ -218,7 +218,7 @@ sden_ent <- sden_test(result, test = "ENT")
 ```r
 looping_machine(dataframe, a_series, b_series, c_series, id_var, timevar,
                 covariates = NULL, include_third_as_covariate = FALSE,
-                min_n_subject = 20, minvar = 0.01,
+                min_n_subject = 20, minvar = 0.01, fixed_d = NULL,
                 correlation_method = "pearson",
                 alpha = 0.05, keep_models = FALSE, verbose = FALSE)
 ```
