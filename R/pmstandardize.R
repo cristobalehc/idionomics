@@ -2,24 +2,20 @@
 #'
 #' Computes within-person z-scores for each variable in `cols`: for every
 #' subject, subtracts that subject's mean and divides by that subject's SD.
-#' This is stronger than person-mean centering (mean subtraction only) — it
-#' also removes between-person differences in variance, making within-person
-#' fluctuations unit-free and comparable across subjects.
 #'
 #' @export
 #'
-#' @param df A dataframe. Must not already be grouped; any existing grouping is
-#'   removed before processing.
+#' @param df A dataframe. Any existing grouping is removed before processing.
 #' @param cols A non-empty character vector of column names to standardize.
 #' @param idvar A string naming the ID variable (one variable only).
 #' @param verbose If `TRUE`, prints a description of the transformation rules
 #'   (default `FALSE`).
 #' @param append If `TRUE` (default), returns the original dataframe with the
-#'   new `_psd` columns appended. If `FALSE`, returns only the ID column plus
+#'   new standardized (`_psd`) columns appended. If `FALSE`, returns only the ID column plus
 #'   the new `_psd` columns.
 #'
 #' @details
-#' For each subject × column combination:
+#' For each subject, and each column:
 #' - All values `NA`: returns `NA`.
 #' - Fewer than 2 non-`NA` values: returns `0` (SD undefined; treated as
 #'   zero deviation).
@@ -63,6 +59,7 @@ pmstandardize <- function(df, cols, idvar, verbose = FALSE, append = TRUE) {
     stop("'cols' must contain at least one column name.")
   }
 
+  # Check if idvar is character and length = 1.
   if (!is.character(idvar) || length(idvar) != 1) {
     stop("'idvar' must be a single character string.")
   }
