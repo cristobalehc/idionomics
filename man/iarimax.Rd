@@ -29,10 +29,12 @@ pairwise-complete observations (across \code{y_series} and all
 \code{stats::nobs()} and might be smaller than \code{min_n_subject} if
 \code{auto.arima()} applies differencing. Defaults to 20.}
 
-\item{minvar}{Numeric. Each series (\code{y_series} and every variable in
-\code{x_series}) must have variance \code{>= minvar}; subjects failing
-this for any series are excluded. Defaults to 0.01. Person-mean standardizing
-variables will make this parameter irrelevant, as var == 1 under z standardization.}
+\item{minvar}{Numeric. Last-resort guard against near-zero variance: subjects
+whose within-person variance on any series (\code{y_series} or \code{x_series}) falls
+below \code{minvar} are excluded. Defaults to 0.01. This guard protects against
+constant or near-constant series that would cause model fitting to fail.
+For substantive data quality screening (e.g., excluding floor/ceiling
+responders on raw data), use \code{\link[=i_screener]{i_screener()}} before entering the pipeline.}
 
 \item{y_series}{A string containing the name of your dependent variable y.}
 

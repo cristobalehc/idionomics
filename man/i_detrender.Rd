@@ -29,9 +29,12 @@ be numeric and complete — no missing values allowed.}
 non-\code{NA} observations in a given column receive \code{NA} in the detrended
 output. Mirrors the threshold used in \code{\link[=iarimax]{iarimax()}}. Defaults to 20.}
 
-\item{minvar}{Numeric. Subjects whose pre-detrend or post-detrend variance
-for a given column falls below \code{minvar} receive \code{NA} in the detrended
-output. Mirrors the threshold used in \code{\link[=iarimax]{iarimax()}}. Defaults to 0.01.}
+\item{minvar}{Numeric. Last-resort guard against near-zero variance: subjects
+whose pre-detrend or post-detrend variance for a given column falls below
+\code{minvar} receive \code{NA} in the detrended output. Defaults to 0.01. This guard
+protects against constant or near-constant series that would produce
+meaningless residuals. For substantive data quality screening on raw data,
+use \code{\link[=i_screener]{i_screener()}} before entering the pipeline.}
 
 \item{verbose}{If \code{TRUE}, prints a description of the detrending rules.
 Defaults to \code{FALSE}.}

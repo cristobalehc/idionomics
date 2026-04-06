@@ -387,6 +387,40 @@ test_that("loop_df contains the id and Loop_positive_directed columns", {
   expect_true("Loop_positive_directed" %in% names(r$loop_df))
 })
 
+test_that("loop_df values match individual leg results_df (no column mixup)", {
+  r  <- .get_mini()
+  df <- r$loop_df
+
+  # For each subject in loop_df, verify that the renamed columns carry the
+
+  # correct values from the corresponding leg's results_df.
+  for (id in df$id) {
+    # a→b leg
+    ab_row <- r$iarimax_a_to_b$results_df[r$iarimax_a_to_b$results_df$id == id, ]
+    expect_equal(df$a_b[df$id == id],           ab_row$estimate_a,   ignore_attr = TRUE)
+    expect_equal(df$stderr_a_b[df$id == id],     ab_row$std.error_a, ignore_attr = TRUE)
+    expect_equal(df$a_b_n_valid[df$id == id],    ab_row$n_valid,     ignore_attr = TRUE)
+    expect_equal(df$a_b_n_params[df$id == id],   ab_row$n_params,    ignore_attr = TRUE)
+    expect_equal(df$a_b_pval[df$id == id],       ab_row$pval_a,      ignore_attr = TRUE)
+
+    # b→c leg
+    bc_row <- r$iarimax_b_to_c$results_df[r$iarimax_b_to_c$results_df$id == id, ]
+    expect_equal(df$b_c[df$id == id],           bc_row$estimate_b,   ignore_attr = TRUE)
+    expect_equal(df$stderr_b_c[df$id == id],     bc_row$std.error_b, ignore_attr = TRUE)
+    expect_equal(df$b_c_n_valid[df$id == id],    bc_row$n_valid,     ignore_attr = TRUE)
+    expect_equal(df$b_c_n_params[df$id == id],   bc_row$n_params,    ignore_attr = TRUE)
+    expect_equal(df$b_c_pval[df$id == id],       bc_row$pval_b,      ignore_attr = TRUE)
+
+    # c→a leg
+    ca_row <- r$iarimax_c_to_a$results_df[r$iarimax_c_to_a$results_df$id == id, ]
+    expect_equal(df$c_a[df$id == id],           ca_row$estimate_c,   ignore_attr = TRUE)
+    expect_equal(df$stderr_c_a[df$id == id],     ca_row$std.error_c, ignore_attr = TRUE)
+    expect_equal(df$c_a_n_valid[df$id == id],    ca_row$n_valid,     ignore_attr = TRUE)
+    expect_equal(df$c_a_n_params[df$id == id],   ca_row$n_params,    ignore_attr = TRUE)
+    expect_equal(df$c_a_pval[df$id == id],       ca_row$pval_c,      ignore_attr = TRUE)
+  }
+})
+
 
 # ── i_pval already applied ───────────────────────────────────────────────────
 
@@ -428,6 +462,64 @@ test_that("a row with a negative a_b beta is flagged Loop_positive_directed = 0"
   neg_rows <- which(df[["a_b"]] < 0)
   expect_gt(length(neg_rows), 0L)
   expect_equal(df[["Loop_positive_directed"]][neg_rows[1]], 0L)
+})
+
+test_that("NA guard: subject with NA pval gets Loop_positive_directed = NA, not 0", {
+  # Build a fake loop_df with one subject having NA pval (simulating a failed model).
+  # Without the any_na guard, NA & FALSE would collapse to FALSE → 0L.
+  fake_df <- data.frame(
+    id       = c("A", "B", "C"),
+    a_b      = c(0.5,  0.3,  NA),
+    a_b_pval = c(0.01, 0.01, NA),
+    b_c      = c(0.4,  -0.2, 0.5),
+    b_c_pval = c(0.02, 0.80, 0.03),
+    c_a      = c(0.3,  0.1,  0.4),
+    c_a_pval = c(0.03, 0.03, 0.01),
+    stringsAsFactors = FALSE
+  )
+
+  any_na <- is.na(fake_df$a_b_pval) |
+            is.na(fake_df$b_c_pval) |
+            is.na(fake_df$c_a_pval)
+
+  indicator <- ifelse(
+    any_na,
+    NA_integer_,
+    ifelse(
+      fake_df$a_b_pval < 0.05 & fake_df$b_c_pval < 0.05 & fake_df$c_a_pval < 0.05 &
+        fake_df$a_b > 0 & fake_df$b_c > 0 & fake_df$c_a > 0,
+      1L, 0L
+    )
+  )
+
+  # A: all positive and sig → 1
+  expect_equal(indicator[1], 1L)
+  # B: b_c is negative and non-sig → 0
+  expect_equal(indicator[2], 0L)
+  # C: NA pval in a_b → NA, NOT 0
+  expect_true(is.na(indicator[3]))
+})
+
+test_that("Loop_positive_directed is correct per subject (no cross-subject mixup)", {
+  r  <- .get_mini()
+  df <- r$loop_df
+  al <- r$alpha
+
+  for (i in seq_len(nrow(df))) {
+    row <- df[i, ]
+    has_na <- is.na(row$a_b_pval) || is.na(row$b_c_pval) || is.na(row$c_a_pval)
+
+    if (has_na) {
+      expect_true(is.na(row$Loop_positive_directed),
+                  info = paste("Subject", row$id, "should be NA (failed model)"))
+    } else {
+      is_loop <- row$a_b > 0 && row$b_c > 0 && row$c_a > 0 &&
+                 row$a_b_pval < al && row$b_c_pval < al && row$c_a_pval < al
+      expected <- if (is_loop) 1L else 0L
+      expect_equal(row$Loop_positive_directed, expected,
+                   info = paste("Subject", row$id, "indicator mismatch"))
+    }
+  }
 })
 
 

@@ -29,15 +29,17 @@ looping_machine(
 
 \item{id_var}{String naming the subject ID variable.}
 
-\item{timevar}{String naming the time variable (must be complete, no NAs).}
+\item{timevar}{String naming the time variable (must be complete, no NAs, and numeric see \code{\link{iarimax}()}).}
 
 \item{covariates}{Optional character vector of additional predictors added to all three legs. Defaults to NULL.}
 
 \item{include_third_as_covariate}{If TRUE, the third loop variable is added as a covariate in each leg. Note: this also applies \code{minvar} filtering to the third variable, which may silently reduce the subject count. Defaults to FALSE.}
 
-\item{min_n_subject}{Minimum pairwise-complete observations per subject. Defaults to 20.}
+\item{min_n_subject}{Minimum pairwise-complete observations per subject per I-ARIMAX run. Defaults to 20.}
 
-\item{minvar}{Minimum variance required in all series to retain a subject. Defaults to 0.01.}
+\item{minvar}{Numeric. Last-resort guard against near-zero variance, passed
+to each \code{\link[=iarimax]{iarimax()}} leg. Defaults to 0.01. For substantive data quality
+screening on raw data, use \code{\link[=i_screener]{i_screener()}} before entering the pipeline.}
 
 \item{fixed_d}{Optional non-negative integer passed to \code{\link{iarimax}()}
 for all three legs. See \code{\link{iarimax}()} for details.}
@@ -62,42 +64,49 @@ A named list:
 }
 }
 \description{
-Fits three I-ARIMAX models forming a directed loop (a -> b -> c -> a),
+Fits three I-ARIMAX procedures forming a directed loop (a -> b -> c -> a),
 applies per-subject p-values, and flags subjects where all three focal
 coefficients are positive and significant.
 }
 \section{Statistical notes}{
 
 
-\strong{Conjunction criterion and Type I error.} \code{Loop_positive_directed} requires
-all three tests to be significant at \code{alpha} and all three coefficients to
-be positive. By Boole's inequality,
-\eqn{P(T_1 \cap T_2 \cap T_3) \leq \min(P(T_i)) = \alpha} under the global
-null, regardless of the correlation between legs. The criterion is always
-conservative or at most exactly \eqn{\alpha}.
+\strong{Conjunction criterion and Type I error for \code{Loop_positive_directed}.}
+\code{Loop_positive_directed} requires all three legs to be significant at
+\code{alpha} and all three focal coefficients to be positive. Because the
+positive directed loop is a one-sided criterion (positive only), each leg's
+probability of contributing to the loop under the global null is
+\eqn{\alpha / 2} (half the two-tailed rate). The conjunction (intersection)
+of three events cannot be more probable than any single event, so
+\eqn{P(T_1 \cap T_2 \cap T_3) \leq \alpha / 2} regardless of the
+correlation between legs. Under independence, the rate is exactly
+\eqn{(\alpha / 2)^3}. The criterion can be therefore very conservative.
 
-\strong{Partial effects on a possibly differenced outcome.} Coefficients are partial
+\strong{Comparison with possibly differenced outcomes.} Coefficients are partial
 regression effects conditioned on the ARMA structure chosen by
 \code{auto.arima()}. When differencing is selected (\eqn{d > 0}), the
 coefficient describes the relationship on the differenced scale, not the raw
 level. Check the ARIMA orders in each leg's \code{results_df} before
-interpreting the sign of \code{Loop_positive_directed}.
+interpreting \code{Loop_positive_directed}, and make sure that differenced and undifferenced legs
+are indeed substantively comparable.
 }
 
 \examples{
 \donttest{
-# Build a panel with three correlated variables
+# Build a panel with three correlated processes
 set.seed(7)
 panel <- do.call(rbind, lapply(1:6, function(id) {
-  a <- rnorm(30)
-  b <- 0.4 * a + rnorm(30)
-  c <- 0.4 * b + rnorm(30)
+  a_process <- rnorm(30)
+  b_process <- 0.4 * a_process + rnorm(30)
+  c_process <- 0.4 * b_process + rnorm(30)
   data.frame(id = as.character(id), time = seq_len(30),
-             a = a, b = b, c = c, stringsAsFactors = FALSE)
+             a_process = a_process, b_process = b_process,
+             c_process = c_process, stringsAsFactors = FALSE)
 }))
 
 loop_result <- looping_machine(panel,
-                               a_series = "a", b_series = "b", c_series = "c",
+                               a_series = "a_process", b_series = "b_process",
+                               c_series = "c_process",
                                id_var   = "id", timevar  = "time")
 
 # Proportion of subjects with a detected positive directed loop

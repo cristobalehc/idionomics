@@ -106,12 +106,12 @@ test_that("non-numeric timevar triggers error naming the class", {
   )
 })
 
-test_that("Date timevar triggers error suggesting as.numeric()", {
+test_that("Date timevar triggers error suggesting numeric conversion", {
   df <- make_det_df()
   df$time <- as.Date("2024-01-01") + df$time
   expect_error(
     i_detrender(df, cols = "x", idvar = "id", timevar = "time"),
-    regexp = "as.numeric"
+    regexp = "must be numeric"
   )
 })
 

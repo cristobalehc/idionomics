@@ -11,10 +11,12 @@
 #'   \code{n_valid} is extracted directly from the fitted Arima object via
 #'   \code{stats::nobs()} and might be smaller than \code{min_n_subject} if
 #'   \code{auto.arima()} applies differencing. Defaults to 20.
-#' @param minvar Numeric. Each series (\code{y_series} and every variable in
-#'   \code{x_series}) must have variance \code{>= minvar}; subjects failing
-#'   this for any series are excluded. Defaults to 0.01. Person-mean standardizing
-#'   variables will make this parameter irrelevant, as var == 1 under z standardization.
+#' @param minvar Numeric. Last-resort guard against near-zero variance: subjects
+#'   whose within-person variance on any series (`y_series` or `x_series`) falls
+#'   below `minvar` are excluded. Defaults to 0.01. This guard protects against
+#'   constant or near-constant series that would cause model fitting to fail.
+#'   For substantive data quality screening (e.g., excluding floor/ceiling
+#'   responders on raw data), use [i_screener()] before entering the pipeline.
 #' @param y_series A string containing the name of your dependent variable y.
 #' @param x_series A character vector containing the name(s) of your predictor variable(s).
 #' @param focal_predictor A string with the name of the predictor to use in the meta-analysis.

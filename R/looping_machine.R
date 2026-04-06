@@ -1,6 +1,6 @@
 #' Run dynamic looping I-ARIMAX algorithm.
 #'
-#' Fits three I-ARIMAX models forming a directed loop (a -> b -> c -> a),
+#' Fits three I-ARIMAX procedures forming a directed loop (a -> b -> c -> a),
 #' applies per-subject p-values, and flags subjects where all three focal
 #' coefficients are positive and significant.
 #'
@@ -9,11 +9,13 @@
 #' @param dataframe Your dataframe.
 #' @param a_series,b_series,c_series Strings naming the three loop variables.
 #' @param id_var String naming the subject ID variable.
-#' @param timevar String naming the time variable (must be complete, no NAs).
+#' @param timevar String naming the time variable (must be complete, no NAs, and numeric see \code{\link{iarimax}()}).
 #' @param covariates Optional character vector of additional predictors added to all three legs. Defaults to NULL.
 #' @param include_third_as_covariate If TRUE, the third loop variable is added as a covariate in each leg. Note: this also applies \code{minvar} filtering to the third variable, which may silently reduce the subject count. Defaults to FALSE.
-#' @param min_n_subject Minimum pairwise-complete observations per subject. Defaults to 20.
-#' @param minvar Minimum variance required in all series to retain a subject. Defaults to 0.01.
+#' @param min_n_subject Minimum pairwise-complete observations per subject per I-ARIMAX run. Defaults to 20.
+#' @param minvar Numeric. Last-resort guard against near-zero variance, passed
+#'   to each [iarimax()] leg. Defaults to 0.01. For substantive data quality
+#'   screening on raw data, use [i_screener()] before entering the pipeline.
 #' @param fixed_d Optional non-negative integer passed to \code{\link{iarimax}()}
 #'   for all three legs. See \code{\link{iarimax}()} for details.
 #' @param correlation_method Raw correlation method: 'pearson', 'spearman', or 'kendall'. Defaults to 'pearson'.
@@ -23,19 +25,24 @@
 #'
 #' @section Statistical notes:
 #'
-#' **Conjunction criterion and Type I error.** \code{Loop_positive_directed} requires
-#' all three tests to be significant at \code{alpha} and all three coefficients to
-#' be positive. By Boole's inequality,
-#' \eqn{P(T_1 \cap T_2 \cap T_3) \leq \min(P(T_i)) = \alpha} under the global
-#' null, regardless of the correlation between legs. The criterion is always
-#' conservative or at most exactly \eqn{\alpha}.
+#' **Conjunction criterion and Type I error for \code{Loop_positive_directed}.**
+#' \code{Loop_positive_directed} requires all three legs to be significant at
+#' \code{alpha} and all three focal coefficients to be positive. Because the
+#' positive directed loop is a one-sided criterion (positive only), each leg's
+#' probability of contributing to the loop under the global null is
+#' \eqn{\alpha / 2} (half the two-tailed rate). The conjunction (intersection)
+#' of three events cannot be more probable than any single event, so
+#' \eqn{P(T_1 \cap T_2 \cap T_3) \leq \alpha / 2} regardless of the
+#' correlation between legs. Under independence, the rate is exactly
+#' \eqn{(\alpha / 2)^3}. The criterion can be therefore very conservative.
 #'
-#' **Partial effects on a possibly differenced outcome.** Coefficients are partial
+#' **Comparison with possibly differenced outcomes.** Coefficients are partial
 #' regression effects conditioned on the ARMA structure chosen by
 #' \code{auto.arima()}. When differencing is selected (\eqn{d > 0}), the
 #' coefficient describes the relationship on the differenced scale, not the raw
 #' level. Check the ARIMA orders in each leg's \code{results_df} before
-#' interpreting the sign of \code{Loop_positive_directed}.
+#' interpreting \code{Loop_positive_directed}, and make sure that differenced and undifferenced legs
+#' are indeed substantively comparable.
 #'
 #' @return A named list:
 #' \describe{
@@ -49,18 +56,20 @@
 #'
 #' @examples
 #' \donttest{
-#' # Build a panel with three correlated variables
+#' # Build a panel with three correlated processes
 #' set.seed(7)
 #' panel <- do.call(rbind, lapply(1:6, function(id) {
-#'   a <- rnorm(30)
-#'   b <- 0.4 * a + rnorm(30)
-#'   c <- 0.4 * b + rnorm(30)
+#'   a_process <- rnorm(30)
+#'   b_process <- 0.4 * a_process + rnorm(30)
+#'   c_process <- 0.4 * b_process + rnorm(30)
 #'   data.frame(id = as.character(id), time = seq_len(30),
-#'              a = a, b = b, c = c, stringsAsFactors = FALSE)
+#'              a_process = a_process, b_process = b_process,
+#'              c_process = c_process, stringsAsFactors = FALSE)
 #' }))
 #'
 #' loop_result <- looping_machine(panel,
-#'                                a_series = "a", b_series = "b", c_series = "c",
+#'                                a_series = "a_process", b_series = "b_process",
+#'                                c_series = "c_process",
 #'                                id_var   = "id", timevar  = "time")
 #'
 #' # Proportion of subjects with a detected positive directed loop
@@ -91,6 +100,27 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
     stop("'minvar' must be a finite non-negative number.")
   }
 
+  # Guard: id_var and timevar must be single character strings.
+  if (!is.character(id_var) || length(id_var) != 1) {
+    stop("'id_var' must be a single character string.")
+  }
+  if (!is.character(timevar) || length(timevar) != 1) {
+    stop("'timevar' must be a single character string.")
+  }
+
+  # Guard: correlation_method must be valid.
+  if (!correlation_method %in% c("pearson", "spearman", "kendall")) {
+    stop(paste("Correlation method not supported. Check if you spelled the method correctly:", correlation_method))
+  }
+
+  # Guard: fixed_d must be a non-negative integer if provided.
+  if (!is.null(fixed_d)) {
+    if (!is.numeric(fixed_d) || length(fixed_d) != 1 ||
+        !is.finite(fixed_d) || fixed_d < 0 || fixed_d != round(fixed_d)) {
+      stop("'fixed_d' must be a single non-negative integer (e.g., 0 or 1).")
+    }
+  }
+
   # Guard: all three series must be different variables.
   series_names <- c(a_series, b_series, c_series)
   if (length(unique(series_names)) < 3) {
@@ -113,6 +143,35 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
     }
   }
 
+  # Guard: all required variables must exist in the dataframe.
+  required_vars <- c(a_series, b_series, c_series, id_var, timevar, covariates)
+  if (!all(required_vars %in% colnames(dataframe))) {
+    missing_vars <- required_vars[!required_vars %in% colnames(dataframe)]
+    stop(paste(
+      "Cannot find required variables. Check if you spelled the following variables correctly:",
+      paste(missing_vars, collapse = ", ")
+    ))
+  }
+
+  # Guard: timevar must be numeric.
+  if (!is.numeric(dataframe[[timevar]])) {
+    stop(
+      "Column '", timevar, "' must be numeric. Got class: ",
+      class(dataframe[[timevar]])[1],
+      ". Convert dates or other formats to a reasonable numeric value before calling looping_machine."
+    )
+  }
+
+  # Guard: timevar must have no missing values.
+  n_missing_timevar <- sum(is.na(dataframe[[timevar]]))
+  if (n_missing_timevar > 0) {
+    stop(
+      n_missing_timevar, " row(s) have missing values in the time variable '", timevar, "'. ",
+      "looping_machine requires a non-missing timevar value for every observation. ",
+      "Please review, remove or impute these rows before running looping_machine."
+    )
+  }
+
   # Create name tags.
   ab_name <- paste0(a_series, "_", b_series)
   bc_name <- paste0(b_series, "_", c_series)
@@ -126,8 +185,7 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
     stop(
       "The series name combinations produce non-unique leg names: ",
       paste(leg_names, collapse = ", "),
-      ". Rename your variables to remove ambiguity ",
-      "(e.g., avoid underscores in series names)."
+      ". Rename your variables to remove ambiguity "
     )
   }
 
@@ -199,8 +257,8 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
 
   loop_df[["Loop_positive_directed"]] <- ifelse(
     any_na,
-    NA_integer_,
-    ifelse(
+    NA_integer_, #Guard.
+    ifelse( #Calculate Loop_positive_directed
       loop_df[[paste0(ab_name, "_pval")]] < alpha &
         loop_df[[paste0(bc_name, "_pval")]] < alpha &
         loop_df[[paste0(ca_name, "_pval")]] < alpha &
@@ -225,7 +283,7 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
 
   if (n_dropped_by_join > 0) {
     message(n_dropped_by_join, ' subject(s) dropped from loop_df: present in at least one leg ',
-            'but excluded from another by the variance/n filter or a failed ARIMAX fit.')
+            'but excluded from another by the variance/n filter.')
   }
 
   if (verbose) message(
