@@ -13,8 +13,13 @@ i_pval(iarimax_object, feature = NULL)
 }
 \value{
 Returns an updated version of results_df within the iarimax_object with p-values for the specific feature.
-p-values use ML-based degrees of freedom (n_valid - n_params), not the OLS formula, and will differ
-from \code{lm()} even for an ARIMA(0,0,0) model. If both estimate and SE are exactly zero,
+p-values use ML-based degrees of freedom (n_valid - n_params) and will
+differ from \code{lm()} even for an ARIMA(0,0,0) model because
+\code{stats::arima} estimates residual variance via maximum likelihood
+(dividing by n) rather than the OLS unbiased estimator (dividing by
+n - k), which affects the standard errors used to compute the t-statistic.
+For higher-order models, differencing further reduces n_valid and AR/MA
+parameters increase n_params, widening the gap. If both estimate and SE are exactly zero,
 the p-value is set to \code{NA} (not \code{NaN}).
 }
 \description{
@@ -23,7 +28,7 @@ Case by case p-value calculation based on t-distribution.
 \examples{
 \donttest{
 # Fit I-ARIMAX on a small synthetic panel
-set.seed(1)
+set.seed(42)
 panel <- do.call(rbind, lapply(1:4, function(id) {
   x <- rnorm(30)
   data.frame(id = as.character(id), time = seq_len(30),

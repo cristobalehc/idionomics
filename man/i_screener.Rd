@@ -23,11 +23,11 @@ i_screener(
 
 \item{idvar}{A string naming the ID variable (one variable only).}
 
-\item{min_n_subject}{Integer. Subjects with fewer than \code{min_n_subject}
+\item{min_n_subject}{Integer. Subjects or columns with fewer than \code{min_n_subject}
 non-\code{NA} observations in a given column fail this criterion. Defaults to
 \code{20}, matching \code{\link[=iarimax]{iarimax()}}'s default threshold.}
 
-\item{min_sd}{Numeric or \code{NULL}. If provided, subjects whose within-person SD
+\item{min_sd}{Numeric or \code{NULL}. If provided, subjects or columns whose within-person SD
 for a given column is below \code{min_sd} (in raw units) fail this criterion.
 Must be a finite positive number. \code{NULL} (default) skips this check. Use
 this before \code{\link[=pmstandardize]{pmstandardize()}} to exclude floor/ceiling responders and
@@ -36,7 +36,7 @@ near-constant series.}
 \item{max_mode_pct}{Numeric in \verb{(0, 1]} or \code{NULL}. If provided, subjects for
 whom more than \code{max_mode_pct} of their non-\code{NA} responses fall on the same
 value fail this criterion. Computed as
-\code{max(table(x)) / sum(!is.na(x))}. Suggested value: \code{0.80}. Useful for
+\code{max(table(x)) / sum(!is.na(x))}. Useful for
 Likert/ordinal EMA data to detect "stuck" or floor/ceiling responders.
 \code{NULL} (default) skips this check.}
 
@@ -48,7 +48,7 @@ on \emph{any} variable. Mirrors \code{\link[=iarimax]{iarimax()}}'s AND filter. 
 all \code{cols} will be analyzed together in the same model.
 \item \code{"per_column"}: each column is evaluated independently. A subject can
 pass for one variable and fail for another. Useful for exploratory quality
-inspection across a broad set of variables.
+inspection across a broad set of variables. The pass_overall column in reports always uses a joint criterion.
 }}
 
 \item{mode}{One of \code{"filter"} (default), \code{"flag"}, or \code{"report"}. Controls
@@ -56,11 +56,11 @@ the type of output returned:
 \itemize{
 \item \code{"filter"}: returns the dataframe with failing subjects' rows removed
 (\code{"joint"}) or their failing column values set to \code{NA} (\code{"per_column"}).
-\item \code{"flag"}: returns the original dataframe with a logical \code{pass_screen}
+\item \code{"flag"}: returns the original dataframe with a logical \code{pass_overall}
 column added (\code{"joint"}) or one \verb{<col>_pass} column per variable
 (\code{"per_column"}).
 \item \code{"report"}: returns a per-subject summary dataframe with quality metrics
-and pass/fail indicators for each column and overall.
+and pass/fail indicators for each column and overall (pass_overall).
 }}
 
 \item{verbose}{If \code{TRUE}, prints the criteria applied and subject counts
@@ -71,7 +71,7 @@ Depends on \code{mode}:
 \itemize{
 \item \code{"filter"}: a dataframe with the same columns as input but possibly fewer
 rows (\code{"joint"}) or \code{NA} values in screened columns (\code{"per_column"}).
-\item \code{"flag"}: the original dataframe with \code{pass_screen} (\code{"joint"}) or
+\item \code{"flag"}: the original dataframe with \code{pass_overall} (\code{"joint"}) or
 \verb{<col>_pass} columns (\code{"per_column"}) appended.
 \item \code{"report"}: a per-subject summary dataframe with one row per subject and
 columns grouped by metric: all \verb{<col>_n_valid}, then all \verb{<col>_sd}, then
@@ -79,9 +79,9 @@ all \verb{<col>_mode_pct}, then all \verb{<col>_pass}, and finally \code{pass_ov
 }
 }
 \description{
-Applies per-subject data quality filters on raw (unstandardized) time series
+Applies per-subject data quality filters on raw (unstandardized) time series designed to be implemented
 before \code{\link[=pmstandardize]{pmstandardize()}} or \code{\link[=iarimax]{iarimax()}}. After \code{\link[=pmstandardize]{pmstandardize()}}, all
-non-constant series have within-person variance \eqn{\approx 1} by
+non-constant series have within-person variance = 1 by
 construction, making \code{\link[=iarimax]{iarimax()}}'s \code{minvar} filter ineffective. Running
 \code{i_screener()} on raw data prevents low-quality subjects from entering the
 pipeline.
@@ -103,8 +103,7 @@ A subject-column fails as soon as any active criterion is not met.
 
 When \code{filter_type = "per_column"} and \code{mode = "filter"}, failing subjects
 are not removed entirely — their values in the failing column are set to
-\code{NA}. Downstream functions such as \code{\link[=iarimax]{iarimax()}} will apply their own joint
-filter over whatever columns remain.
+\code{NA}. Subject-column combinations consisting solely of NA values will fail downstream function's \code{min_n_subject} filters.
 
 Note that \code{i_screener()} evaluates each column's non-\code{NA} count independently
 (\code{min_n}), whereas \code{\link[=iarimax]{iarimax()}} filters on \emph{pairwise-complete} observations
@@ -126,7 +125,7 @@ trend — a case \code{i_screener()} cannot anticipate.
 }
 \examples{
 local({
-set.seed(1)
+set.seed(42)
 panel <- do.call(rbind, lapply(1:4, function(id) {
   data.frame(
     id   = as.character(id),
@@ -143,7 +142,7 @@ result <- i_screener(panel, cols = c("x", "y"), idvar = "id", min_sd = 0.5)
 # Inspect which subjects would be removed without committing
 flagged <- i_screener(panel, cols = c("x", "y"), idvar = "id",
                     min_sd = 0.5, mode = "flag")
-table(flagged$pass_screen)
+table(flagged$pass_overall)
 
 # Retrieve a per-subject quality summary
 report <- i_screener(panel, cols = c("x", "y"), idvar = "id",

@@ -1,8 +1,8 @@
 #' Screen subjects for data quality before entering the idionomic pipeline.
 #'
-#' Applies per-subject data quality filters on raw (unstandardized) time series
+#' Applies per-subject data quality filters on raw (unstandardized) time series designed to be implemented
 #' before [pmstandardize()] or [iarimax()]. After [pmstandardize()], all
-#' non-constant series have within-person variance \eqn{\approx 1} by
+#' non-constant series have within-person variance = 1 by
 #' construction, making [iarimax()]'s `minvar` filter ineffective. Running
 #' `i_screener()` on raw data prevents low-quality subjects from entering the
 #' pipeline.
@@ -12,10 +12,10 @@
 #' @param df A dataframe. Any existing grouping is removed before processing.
 #' @param cols A non-empty character vector of column names to screen.
 #' @param idvar A string naming the ID variable (one variable only).
-#' @param min_n_subject Integer. Subjects with fewer than `min_n_subject`
+#' @param min_n_subject Integer. Subjects or columns with fewer than `min_n_subject`
 #'   non-`NA` observations in a given column fail this criterion. Defaults to
 #'   `20`, matching [iarimax()]'s default threshold.
-#' @param min_sd Numeric or `NULL`. If provided, subjects whose within-person SD
+#' @param min_sd Numeric or `NULL`. If provided, subjects or columns whose within-person SD
 #'   for a given column is below `min_sd` (in raw units) fail this criterion.
 #'   Must be a finite positive number. `NULL` (default) skips this check. Use
 #'   this before [pmstandardize()] to exclude floor/ceiling responders and
@@ -23,7 +23,7 @@
 #' @param max_mode_pct Numeric in `(0, 1]` or `NULL`. If provided, subjects for
 #'   whom more than `max_mode_pct` of their non-`NA` responses fall on the same
 #'   value fail this criterion. Computed as
-#'   `max(table(x)) / sum(!is.na(x))`. Suggested value: `0.80`. Useful for
+#'   `max(table(x)) / sum(!is.na(x))`. Useful for
 #'   Likert/ordinal EMA data to detect "stuck" or floor/ceiling responders.
 #'   `NULL` (default) skips this check.
 #' @param filter_type One of `"joint"` (default) or `"per_column"`. Controls
@@ -33,16 +33,16 @@
 #'     all `cols` will be analyzed together in the same model.
 #'   - `"per_column"`: each column is evaluated independently. A subject can
 #'     pass for one variable and fail for another. Useful for exploratory quality
-#'     inspection across a broad set of variables.
+#'     inspection across a broad set of variables. The pass_overall column in reports always uses a joint criterion.
 #' @param mode One of `"filter"` (default), `"flag"`, or `"report"`. Controls
 #'   the type of output returned:
 #'   - `"filter"`: returns the dataframe with failing subjects' rows removed
 #'     (`"joint"`) or their failing column values set to `NA` (`"per_column"`).
-#'   - `"flag"`: returns the original dataframe with a logical `pass_screen`
+#'   - `"flag"`: returns the original dataframe with a logical `pass_overall`
 #'     column added (`"joint"`) or one `<col>_pass` column per variable
 #'     (`"per_column"`).
 #'   - `"report"`: returns a per-subject summary dataframe with quality metrics
-#'     and pass/fail indicators for each column and overall.
+#'     and pass/fail indicators for each column and overall (pass_overall).
 #' @param verbose If `TRUE`, prints the criteria applied and subject counts
 #'   before and after screening. Defaults to `FALSE`.
 #'
@@ -61,8 +61,7 @@
 #'
 #' When `filter_type = "per_column"` and `mode = "filter"`, failing subjects
 #' are not removed entirely — their values in the failing column are set to
-#' `NA`. Downstream functions such as [iarimax()] will apply their own joint
-#' filter over whatever columns remain.
+#' `NA`. Subject-column combinations consisting solely of NA values will fail downstream function's `min_n_subject` filters.
 #'
 #' Note that `i_screener()` evaluates each column's non-`NA` count independently
 #' (`min_n`), whereas [iarimax()] filters on *pairwise-complete* observations
@@ -85,7 +84,7 @@
 #' @return Depends on `mode`:
 #' - `"filter"`: a dataframe with the same columns as input but possibly fewer
 #'   rows (`"joint"`) or `NA` values in screened columns (`"per_column"`).
-#' - `"flag"`: the original dataframe with `pass_screen` (`"joint"`) or
+#' - `"flag"`: the original dataframe with `pass_overall` (`"joint"`) or
 #'   `<col>_pass` columns (`"per_column"`) appended.
 #' - `"report"`: a per-subject summary dataframe with one row per subject and
 #'   columns grouped by metric: all `<col>_n_valid`, then all `<col>_sd`, then
@@ -93,7 +92,7 @@
 #'
 #' @examples
 #' local({
-#' set.seed(1)
+#' set.seed(42)
 #' panel <- do.call(rbind, lapply(1:4, function(id) {
 #'   data.frame(
 #'     id   = as.character(id),
@@ -110,7 +109,7 @@
 #' # Inspect which subjects would be removed without committing
 #' flagged <- i_screener(panel, cols = c("x", "y"), idvar = "id",
 #'                     min_sd = 0.5, mode = "flag")
-#' table(flagged$pass_screen)
+#' table(flagged$pass_overall)
 #'
 #' # Retrieve a per-subject quality summary
 #' report <- i_screener(panel, cols = c("x", "y"), idvar = "id",
@@ -166,9 +165,9 @@ i_screener <- function(df, cols, idvar,
   }
 
   # Check for output column name collisions that would corrupt output silently.
-  if (mode == "flag" && filter_type == "joint" && "pass_screen" %in% names(df)) {
+  if (mode == "flag" && filter_type == "joint" && "pass_overall" %in% names(df)) {
     stop(
-      "Input dataframe already contains a column named 'pass_screen'. ",
+      "Input dataframe already contains a column named 'pass_overall'. ",
       "Please rename it before calling i_screener()."
     )
   }
@@ -184,25 +183,28 @@ i_screener <- function(df, cols, idvar,
   }
 
   # Remove any pre-existing grouping.
-  df        <- dplyr::ungroup(df)
+  df <- dplyr::ungroup(df)
+
+  #Create symbolic variable.
   idvar_sym <- rlang::sym(idvar)
 
+  #Calculate the original n_subjects.
   n_subjects_original <- length(unique(df[[idvar]]))
 
   # Provide explanation, conditional to verbose = TRUE.
   if (verbose) {
     message("i_screener applies per-subject data quality filters.")
-    message("   min_n_subject: subjects need >= ", min_n_subject, " non-NA observations per variable.")
+    message("   min_n_subject: subject-column combinations need >= ", min_n_subject, " non-NA observations per variable.")
     if (!is.null(min_sd)) {
-      message("   min_sd       : subjects need within-person SD >= ", min_sd, " per variable.")
+      message("   min_sd       : subject-column combinations need within-person SD >= ", min_sd, " per variable.")
     }
     if (!is.null(max_mode_pct)) {
-      message("   max_mode_pct : subjects need <= ", max_mode_pct * 100, "% of responses on the modal value.")
+      message("   max_mode_pct : subject-column combinations need <= ", max_mode_pct * 100, "% of responses on the modal value.")
     }
     message(
       "   filter_type  : '", filter_type, "' - ",
-      if (filter_type == "joint") "excluded if any variable fails any criterion."
-      else "each variable evaluated independently."
+      if (filter_type == "joint") "Subjects excluded if any variable fails any criterion."
+      else "Each variable evaluated independently."
     )
   }
 
@@ -235,6 +237,7 @@ i_screener <- function(df, cols, idvar,
     mode_col <- paste0(col, "_mode_pct")
     pass_col <- paste0(col, "_pass")
 
+    #Per subject pass: min_n_subject.
     col_pass <- metrics[[n_col]] >= min_n_subject
 
     if (!is.null(min_sd)) {
@@ -251,7 +254,7 @@ i_screener <- function(df, cols, idvar,
   pass_cols <- paste0(cols, "_pass")
   metrics <- metrics |>
     dplyr::mutate(
-      pass_overall = dplyr::if_all(dplyr::all_of(pass_cols), ~ .x)
+      pass_overall = dplyr::if_all(dplyr::all_of(pass_cols))
     )
 
   if (verbose) {
@@ -271,7 +274,7 @@ i_screener <- function(df, cols, idvar,
 
   # IF mode == "report", return a per-subject quality summary table.
   if (mode == "report") {
-    out_cols <- c(
+    out_cols <- c( #Create vector with names, to reorder output by metric.
       idvar,
       paste0(cols, "_n_valid"),
       paste0(cols, "_sd"),
@@ -286,16 +289,16 @@ i_screener <- function(df, cols, idvar,
   if (mode == "flag") {
     if (filter_type == "joint") {
       pass_info <- metrics[, idvar, drop = FALSE]
-      pass_info$pass_screen <- metrics$pass_overall
+      pass_info$pass_overall <- metrics$pass_overall
       return(dplyr::left_join(df, pass_info, by = idvar))
-    }
+    } #if filter_type = "per_column"
     else {
       pass_info <- metrics |>
         dplyr::select(!!idvar_sym, dplyr::all_of(pass_cols))
       return(dplyr::left_join(df, pass_info, by = idvar))
     }
   }
-
+  #Else:  mode = filter.
   # IF mode == "filter" + filter_type == "joint", remove failing subjects entirely.
   # IF mode == "filter" + filter_type == "per_column", set failing column values to NA.
   if (filter_type == "joint") {
@@ -306,9 +309,10 @@ i_screener <- function(df, cols, idvar,
     pass_info <- metrics |>
       dplyr::select(!!idvar_sym, dplyr::all_of(pass_cols))
     df <- dplyr::left_join(df, pass_info, by = idvar)
+    #Set failing column values to NA.
     for (col in cols) {
       pass_col <- paste0(col, "_pass")
-      df[[col]][!df[[pass_col]]] <- NA
+      df[[col]][!df[[pass_col]]] <- NA #For each element in col, set those not pass (false) as NA.
       df[[pass_col]] <- NULL
     }
     return(df)

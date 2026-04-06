@@ -2,7 +2,7 @@
 % Please edit documentation in R/i_detrender.R
 \name{i_detrender}
 \alias{i_detrender}
-\title{Detrend idiographic time series by the time variable.}
+\title{Linearly detrend idiographic time series by the time variable.}
 \usage{
 i_detrender(
   df,
@@ -22,9 +22,8 @@ i_detrender(
 
 \item{idvar}{A string naming the ID variable (one variable only).}
 
-\item{timevar}{A string naming the time variable used for detrending. Must
-be numeric (or coercible to numeric) and complete — no missing values
-allowed.}
+\item{timevar}{A string naming the time variable used for linear detrending. Must
+be numeric and complete — no missing values allowed.}
 
 \item{min_n_subject}{Integer. Subjects with fewer than \code{min_n_subject}
 non-\code{NA} observations in a given column receive \code{NA} in the detrended
@@ -46,7 +45,7 @@ A dataframe with new \verb{<col>_dt} columns containing the
 within-person linear-detrended residuals.
 }
 \description{
-Detrend idiographic time series by the time variable.
+Linearly detrend idiographic time series by the time variable.
 }
 \details{
 For each subject x column combination, the following rules are applied in

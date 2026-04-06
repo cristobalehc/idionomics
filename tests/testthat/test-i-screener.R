@@ -200,13 +200,13 @@ test_that("mode=filter per_column sets failing col values to NA, other cols unch
   expect_false(any(is.na(y_B)))
 })
 
-test_that("mode=flag joint adds exactly one pass_screen column", {
+test_that("mode=flag joint adds exactly one pass_overall column", {
   df     <- make_screen_df()
   result <- i_screener(df, cols = "x", idvar = "id", min_n_subject = 3, mode = "flag")
-  expect_true("pass_screen" %in% names(result))
+  expect_true("pass_overall" %in% names(result))
   expect_equal(ncol(result), ncol(df) + 1L)
   expect_equal(nrow(result), nrow(df))
-  expect_type(result$pass_screen, "logical")
+  expect_type(result$pass_overall, "logical")
 })
 
 test_that("mode=flag per_column adds one <col>_pass column per variable", {
@@ -215,7 +215,7 @@ test_that("mode=flag per_column adds one <col>_pass column per variable", {
                      mode = "flag", filter_type = "per_column")
   expect_true("x_pass" %in% names(result))
   expect_true("y_pass" %in% names(result))
-  expect_false("pass_screen" %in% names(result))
+  expect_false("pass_overall" %in% names(result))
   expect_equal(ncol(result), ncol(df) + 2L)
 })
 
@@ -349,14 +349,14 @@ test_that("joint mode removes subject failing on second col only", {
   expect_true("E"  %in% result_pc$id)
 })
 
-test_that("flag joint: pass_screen is TRUE only for fully passing subjects", {
+test_that("flag joint: pass_overall is TRUE only for fully passing subjects", {
   df     <- make_screen_df()
   result <- i_screener(df, cols = c("x", "y"), idvar = "id",
                      min_n_subject = 2, min_sd = 0.5, mode = "flag")
   # A passes both; B, C, E fail; D passes x but D's y is fine
-  expect_true( all(result$pass_screen[result$id == "A"]))
-  expect_false(all(result$pass_screen[result$id == "C"]))
-  expect_false(all(result$pass_screen[result$id == "E"]))
+  expect_true( all(result$pass_overall[result$id == "A"]))
+  expect_false(all(result$pass_overall[result$id == "C"]))
+  expect_false(all(result$pass_overall[result$id == "E"]))
 })
 
 test_that("flag per_column: x_pass and y_pass reflect independent evaluation", {
@@ -454,12 +454,12 @@ test_that("verbose message mentions 'i_screener' and subject counts", {
 # Column name collision guard
 # ══════════════════════════════════════════════════════════════════════════════
 
-test_that("flag joint errors if df already has pass_screen column", {
+test_that("flag joint errors if df already has pass_overall column", {
   df              <- make_screen_df()
-  df$pass_screen  <- TRUE
+  df$pass_overall  <- TRUE
   expect_error(
     i_screener(df, cols = "x", idvar = "id", min_n_subject = 3, mode = "flag"),
-    regexp = "pass_screen"
+    regexp = "pass_overall"
   )
 })
 

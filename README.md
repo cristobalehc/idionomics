@@ -77,7 +77,7 @@ Three configurable criteria (all optional except `min_n`):
 
 `mode` controls the output format:
 - `"filter"` — returns the dataframe with failing subjects removed (joint) or their failing column values set to `NA` (per_column).
-- `"flag"` — appends a logical `pass_screen` column (joint) or `<col>_pass` columns (per_column).
+- `"flag"` — appends a logical `pass_overall` column (joint) or `<col>_pass` columns (per_column).
 - `"report"` — returns a per-subject quality summary table.
 
 ```r
@@ -94,7 +94,7 @@ print(report)
 # Flag subjects for inspection, then decide
 flagged <- i_screener(panel, cols = c("x", "y"), idvar = "id",
                     min_sd = 0.5, mode = "flag")
-table(flagged$pass_screen)
+table(flagged$pass_overall)
 ```
 
 ---

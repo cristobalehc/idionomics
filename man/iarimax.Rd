@@ -31,19 +31,21 @@ pairwise-complete observations (across \code{y_series} and all
 
 \item{minvar}{Numeric. Each series (\code{y_series} and every variable in
 \code{x_series}) must have variance \code{>= minvar}; subjects failing
-this for any series are excluded. Defaults to 0.01.}
+this for any series are excluded. Defaults to 0.01. Person-mean standardizing
+variables will make this parameter irrelevant, as var == 1 under z standardization.}
 
 \item{y_series}{A string containing the name of your dependent variable y.}
 
 \item{x_series}{A character vector containing the name(s) of your predictor variable(s).}
 
-\item{focal_predictor}{A string with the name of the predictor to use in the meta-analysis. Required when x_series has more than one variable. When x_series is a single variable, defaults to that variable.}
+\item{focal_predictor}{A string with the name of the predictor to use in the meta-analysis.
+Required when x_series has more than one variable. When x_series is a single variable, defaults to that variable.}
 
 \item{id_var}{A string containing your id variable.}
 
 \item{timevar}{A string naming the column used to sort observations into
 chronological order within each subject. Must be complete (no missing
-values).}
+values) and numeric.}
 
 \item{fixed_d}{Optional non-negative integer. If provided, fixes the
 differencing order to this value for every subject instead of letting
@@ -78,7 +80,7 @@ appear with \code{NA} for all model statistics (\code{nAR},
 coefficient/SE columns), but retain a valid \code{raw_cor} if the
 correlation step succeeded before the model failure. \code{raw_cor}
 is \code{NA} only if \code{cor.test()} also failed. Their IDs are
-listed in \code{case_number_detail$error_arimax_skipped}.}
+listed in \code{case_number_detail$error_arimax_skipped} if auto.arima fails.}
 \item{meta_analysis}{A \code{metafor::rma} object from a random-effects
 meta-analysis on the focal predictor coefficients, or \code{NULL} if
 the meta-analysis failed (e.g. fewer than two valid estimates).}

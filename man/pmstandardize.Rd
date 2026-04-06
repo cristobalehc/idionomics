@@ -7,8 +7,7 @@
 pmstandardize(df, cols, idvar, verbose = FALSE, append = TRUE)
 }
 \arguments{
-\item{df}{A dataframe. Must not already be grouped; any existing grouping is
-removed before processing.}
+\item{df}{A dataframe. Any existing grouping is removed before processing.}
 
 \item{cols}{A non-empty character vector of column names to standardize.}
 
@@ -18,7 +17,7 @@ removed before processing.}
 (default \code{FALSE}).}
 
 \item{append}{If \code{TRUE} (default), returns the original dataframe with the
-new \verb{_psd} columns appended. If \code{FALSE}, returns only the ID column plus
+new standardized (\verb{_psd}) columns appended. If \code{FALSE}, returns only the ID column plus
 the new \verb{_psd} columns.}
 }
 \value{
@@ -28,12 +27,9 @@ within-person z-scores.
 \description{
 Computes within-person z-scores for each variable in \code{cols}: for every
 subject, subtracts that subject's mean and divides by that subject's SD.
-This is stronger than person-mean centering (mean subtraction only) — it
-also removes between-person differences in variance, making within-person
-fluctuations unit-free and comparable across subjects.
 }
 \details{
-For each subject × column combination:
+For each subject, and each column:
 \itemize{
 \item All values \code{NA}: returns \code{NA}.
 \item Fewer than 2 non-\code{NA} values: returns \code{0} (SD undefined; treated as
