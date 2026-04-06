@@ -1,13 +1,12 @@
-#' Detrend idiographic time series by the time variable.
+#' Linearly detrend idiographic time series by the time variable.
 #'
 #' @export
 #'
 #' @param df A dataframe. Any existing grouping is removed before processing.
 #' @param cols A non-empty character vector of column names to detrend.
 #' @param idvar A string naming the ID variable (one variable only).
-#' @param timevar A string naming the time variable used for detrending. Must
-#'   be numeric (or coercible to numeric) and complete — no missing values
-#'   allowed.
+#' @param timevar A string naming the time variable used for linear detrending. Must
+#'   be numeric and complete — no missing values allowed.
 #' @param min_n_subject Integer. Subjects with fewer than `min_n_subject`
 #'   non-`NA` observations in a given column receive `NA` in the detrended
 #'   output. Mirrors the threshold used in [iarimax()]. Defaults to 20.
@@ -79,16 +78,23 @@ i_detrender <- function(df, cols, idvar, timevar,
     stop("'cols' must contain at least one column name.")
   }
 
+  #id var as single character string.
   if (!is.character(idvar) || length(idvar) != 1) {
     stop("'idvar' must be a single character string.")
   }
+
+  #timevar single character string.
   if (!is.character(timevar) || length(timevar) != 1) {
     stop("'timevar' must be a single character string.")
   }
+
+  #min_n_subject as finite positive number.
   if (!is.numeric(min_n_subject) || length(min_n_subject) != 1 ||
       !is.finite(min_n_subject) || min_n_subject < 1) {
     stop("'min_n_subject' must be a finite positive number.")
   }
+
+  #minvar finite non-negative number.
   if (!is.numeric(minvar) || length(minvar) != 1 ||
       !is.finite(minvar) || minvar < 0) {
     stop("'minvar' must be a finite non-negative number.")
@@ -109,7 +115,7 @@ i_detrender <- function(df, cols, idvar, timevar,
   if (!is.numeric(df[[timevar]])) {
     stop(
       "Column '", timevar, "' must be numeric for linear detrending. Got class: ",
-      class(df[[timevar]])[1], ". Convert dates with as.numeric() before calling i_detrender."
+      class(df[[timevar]])[1], ". Convert dates or other formats to a reasonable numeric value before calling i_detrender."
     )
   }
 
@@ -134,12 +140,14 @@ i_detrender <- function(df, cols, idvar, timevar,
     message("   Otherwise: returns residuals from lm(col ~ timevar) per person.")
   }
 
+  #Create symbolic variables.
   idvar_sym   <- rlang::sym(idvar)
   timevar_sym <- rlang::sym(timevar)
 
+  #Run linear detrending.
   df <- df |>
-    dplyr::group_by(!!idvar_sym) |>
-    dplyr::mutate(dplyr::across(
+    dplyr::group_by(!!idvar_sym) |> #Group by id variable.
+    dplyr::mutate(dplyr::across( #loop through all columns.
       dplyr::all_of(cols),
       ~ {
         n_obs   <- sum(!is.na(.))
