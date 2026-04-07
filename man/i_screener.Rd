@@ -106,8 +106,8 @@ are not removed entirely — their values in the failing column are set to
 \code{NA}. Subject-column combinations consisting solely of NA values will fail downstream function's \code{min_n_subject} filters.
 
 Note that \code{i_screener()} evaluates each column's non-\code{NA} count independently
-(\code{min_n}), whereas \code{\link[=iarimax]{iarimax()}} filters on \emph{pairwise-complete} observations
-across all series jointly. A subject that passes \code{i_screener()}'s \code{min_n}
+(\code{min_n_subject}), whereas \code{\link[=iarimax]{iarimax()}} filters on \emph{pairwise-complete} observations
+across all series jointly. A subject that passes \code{i_screener()}'s \code{min_n_subject}
 threshold may still be excluded by \code{\link[=iarimax]{iarimax()}} if the non-\code{NA} rows in the
 outcome and predictor series do not sufficiently overlap.
 

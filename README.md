@@ -54,8 +54,8 @@ i_screener()   →   pmstandardize()   →   i_detrender()   →   iarimax()   �
 ### `i_screener()` — Pre-pipeline data quality filter
 
 ```r
-i_screener(df, cols, idvar,
-         min_n        = 20,
+i_screener(df, cols, id_var,
+         min_n_subject = 20,
          min_sd       = NULL,
          max_mode_pct = NULL,
          filter_type  = "joint",
@@ -65,11 +65,11 @@ i_screener(df, cols, idvar,
 
 Screens subjects for data quality on raw (unstandardised) data before it enters the pipeline. After `pmstandardize()`, all non-constant series have within-person variance ≈ 1 by construction, making `iarimax()`'s `minvar` filter ineffective. Running `i_screener()` on raw data catches low-quality subjects at the right stage.
 
-Three configurable criteria (all optional except `min_n`):
+Three configurable criteria (all optional except `min_n_subject`):
 
 | Criterion | What it catches | Default |
 |---|---|---|
-| `min_n` | Subjects with too few observations | 20 |
+| `min_n_subject` | Subjects with too few observations | 20 |
 | `min_sd` | Near-constant series (floor/ceiling, low range) | `NULL` (off) |
 | `max_mode_pct` | "Stuck" responders (e.g. ≥ 80 % of responses identical) | `NULL` (off) |
 
@@ -82,17 +82,17 @@ Three configurable criteria (all optional except `min_n`):
 
 ```r
 # Remove subjects with too few obs or low raw variance, before standardizing
-panel_clean <- i_screener(panel, cols = c("x", "y"), idvar = "id",
-                        min_n = 20, min_sd = 0.5)
+panel_clean <- i_screener(panel, cols = c("x", "y"), id_var = "id",
+                        min_n_subject = 20, min_sd = 0.5)
 
 # Inspect quality without committing to removal
-report <- i_screener(panel, cols = c("x", "y"), idvar = "id",
-                   min_n = 20, min_sd = 0.5, max_mode_pct = 0.80,
+report <- i_screener(panel, cols = c("x", "y"), id_var = "id",
+                   min_n_subject = 20, min_sd = 0.5, max_mode_pct = 0.80,
                    mode = "report")
 print(report)
 
 # Flag subjects for inspection, then decide
-flagged <- i_screener(panel, cols = c("x", "y"), idvar = "id",
+flagged <- i_screener(panel, cols = c("x", "y"), id_var = "id",
                     min_sd = 0.5, mode = "flag")
 table(flagged$pass_overall)
 ```
@@ -102,7 +102,7 @@ table(flagged$pass_overall)
 ### `pmstandardize()` — Within-person z-scoring
 
 ```r
-pmstandardize(df, cols, idvar, verbose = FALSE, append = TRUE)
+pmstandardize(df, cols, id_var, verbose = FALSE, append = TRUE)
 ```
 
 Computes `(x - person_mean) / person_sd` for each person × column combination. Output columns are named `<col>_psd`.
@@ -118,7 +118,7 @@ panel <- do.call(rbind, lapply(1:4, function(id) {
 }))
 
 # Standardize x and y within each person
-panel_std <- pmstandardize(panel, cols = c("x", "y"), idvar = "id")
+panel_std <- pmstandardize(panel, cols = c("x", "y"), id_var = "id")
 head(panel_std)
 ```
 
@@ -127,7 +127,7 @@ head(panel_std)
 ### `i_detrender()` — Within-person linear detrending
 
 ```r
-i_detrender(df, cols, idvar, timevar,
+i_detrender(df, cols, id_var, timevar,
             min_n_subject = 20, minvar = 0.01,
             verbose = FALSE, append = TRUE)
 ```
@@ -136,7 +136,7 @@ Fits `lm(col ~ time)` within each subject and replaces the column with the resid
 
 ```r
 panel_dt <- i_detrender(panel_std, cols = c("x_psd", "y_psd"),
-                        idvar = "id", timevar = "time")
+                        id_var = "id", timevar = "time")
 head(panel_dt)
 ```
 
@@ -266,15 +266,15 @@ panel <- do.call(rbind, lapply(1:10, function(id) {
 }))
 
 # Step 1: Quality screening on raw data (before standardization)
-panel_clean <- i_screener(panel, cols = c("x", "y"), idvar = "id",
-                        min_n = 20, min_sd = 0.3, max_mode_pct = 0.80)
+panel_clean <- i_screener(panel, cols = c("x", "y"), id_var = "id",
+                        min_n_subject = 20, min_sd = 0.3, max_mode_pct = 0.80)
 
 # Step 2: Within-person standardization
-panel_std <- pmstandardize(panel_clean, cols = c("x", "y"), idvar = "id")
+panel_std <- pmstandardize(panel_clean, cols = c("x", "y"), id_var = "id")
 
 # Step 3: Linear detrending
 panel_dt <- i_detrender(panel_std, cols = c("x_psd", "y_psd"),
-                        idvar = "id", timevar = "time")
+                        id_var = "id", timevar = "time")
 
 # Step 4: I-ARIMAX
 result <- iarimax(panel_dt,

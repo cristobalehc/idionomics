@@ -64,8 +64,8 @@
 #' `NA`. Subject-column combinations consisting solely of NA values will fail downstream function's `min_n_subject` filters.
 #'
 #' Note that `i_screener()` evaluates each column's non-`NA` count independently
-#' (`min_n`), whereas [iarimax()] filters on *pairwise-complete* observations
-#' across all series jointly. A subject that passes `i_screener()`'s `min_n`
+#' (`min_n_subject`), whereas [iarimax()] filters on *pairwise-complete* observations
+#' across all series jointly. A subject that passes `i_screener()`'s `min_n_subject`
 #' threshold may still be excluded by [iarimax()] if the non-`NA` rows in the
 #' outcome and predictor series do not sufficiently overlap.
 #'

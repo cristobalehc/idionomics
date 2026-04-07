@@ -31,7 +31,7 @@ The recommended pipeline is:
 i_screener()  →  pmstandardize()  →  i_detrender()  →  iarimax()  →  i_pval() / sden_test()
 ```
 
-This vignette walks through each step with a synthetic panel of 10 subjects, each contributing 50 time points.
+This vignette walks through each step with a synthetic panel of 6 subjects, each contributing 30 time points.
 
 ```{r load}
 library(idionomics)
@@ -185,6 +185,47 @@ The auto-selection pivot is fixed at p = 0.05, independent of `alpha_arimax`.
 sden <- sden_test(result_pval)
 summary(sden)
 ```
+
+---
+
+## Directed loop detection — `looping_machine()`
+
+`looping_machine()` tests whether three variables form a directed positive loop (a -> b -> c -> a). It fits three I-ARIMAX legs, applies `i_pval()` to each, and computes `Loop_positive_directed`: a 0/1 indicator that is 1 only when all three focal betas are positive *and* significant at `alpha`.
+
+```{r looping-machine}
+# Build a panel with three correlated processes
+set.seed(7)
+panel3 <- do.call(rbind, lapply(1:6, function(id) {
+  a <- rnorm(30)
+  b <- 0.4 * a + rnorm(30)
+  c <- 0.4 * b + rnorm(30)
+  data.frame(id = as.character(id), time = seq_len(30),
+             a = a, b = b, c = c, stringsAsFactors = FALSE)
+}))
+
+loop_result <- looping_machine(
+  panel3,
+  a_series = "a",
+  b_series = "b",
+  c_series = "c",
+  id_var   = "id",
+  timevar  = "time"
+)
+```
+
+The return value contains the merged per-subject results and each leg's full `iarimax_results` object:
+
+```{r looping-inspect}
+# Proportion of subjects with a detected positive directed loop
+mean(loop_result$loop_df$Loop_positive_directed, na.rm = TRUE)
+
+# Per-leg I-ARIMAX results are also accessible
+summary(loop_result$iarimax_a_to_b)
+```
+
+Because the positive directed loop is a conjunction of three one-sided tests, it is very conservative: under the global null and independence, the false positive rate is approximately $(\alpha/2)^3$.
+
+Optional arguments include `covariates` (shared extra predictors for all three legs), `include_third_as_covariate` (adds the third loop variable as a covariate in each leg), and `fixed_d` (fixes the differencing order across all legs for comparability).
 
 ---
 
