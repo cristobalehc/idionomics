@@ -1,6 +1,6 @@
 Package: idionomics
 Title: Conduct Idiographic-Nomothetic Analyses for Psychological Science
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
    c(
     person("Cristóbal", "Hernández", email = "cristobal.ehc@gmail.com", role = c("cre","aut")),
@@ -36,8 +36,7 @@ Imports:
     rlang,
     stats,
     tibble,
-    tidyr,
-    utils
+    tidyr
 Suggests:
     knitr,
     rmarkdown,

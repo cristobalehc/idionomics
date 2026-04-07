@@ -23,7 +23,8 @@ looping_machine(
 )
 }
 \arguments{
-\item{dataframe}{Your dataframe.}
+\item{dataframe}{A data frame containing time-series data for all subjects,
+with columns for the loop variables, subject ID, and time variable.}
 
 \item{a_series, b_series, c_series}{Strings naming the three loop variables.}
 

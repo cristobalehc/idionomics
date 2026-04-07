@@ -20,7 +20,8 @@ iarimax(
 )
 }
 \arguments{
-\item{dataframe}{Your dataframe.}
+\item{dataframe}{A data frame containing time-series data for all subjects,
+with columns for the outcome, predictor(s), subject ID, and time variable.}
 
 \item{min_n_subject}{Integer. Subjects with fewer than \code{min_n_subject}
 pairwise-complete observations (across \code{y_series} and all

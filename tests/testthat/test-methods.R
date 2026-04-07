@@ -200,6 +200,40 @@ test_that("summary.iarimax_results respects custom alpha argument", {
   expect_output(summary(r, alpha = 0.01), regexp = "0.01")
 })
 
+# ── summary.iarimax_results: direction/significance counts (Layer 1) ────────
+
+test_that("summary.iarimax_results prints correct direction and significance counts", {
+  # Fake data: estimates = 0.4, 0.6, -0.2, 0.3; SEs = 0.10, 0.12, 0.08, 0.11
+  # df = n_valid - n_params: 21, 22, 19, 23
+  # t-stats: 4.0, 5.0, -2.5, 2.73
+  # All have |t| > qt(0.975, df) ≈ 2.08, so all 4 are significant at alpha=0.05
+  # Directions: 3 positive (subjects 1,2,4), 1 negative (subject 3)
+  r   <- make_fake_iarimax()
+  out <- capture.output(summary(r))
+  combined <- paste(out, collapse = " ")
+  expect_match(combined, "Positive\\s*:\\s*3")
+  expect_match(combined, "Significant positive\\s*:\\s*3")
+  expect_match(combined, "Negative\\s*:\\s*1")
+  expect_match(combined, "Significant negative\\s*:\\s*1")
+})
+
+test_that("summary.iarimax_results respects alpha for significance counts", {
+  # At alpha = 0.001, subject 3 (|t|=2.5, df=19) should no longer be significant
+  # qt(0.9995, 19) ≈ 3.88 > 2.5
+  # Subjects 1 (|t|=4.0, df=21) and 2 (|t|=5.0, df=22) remain significant
+  # Subject 4 (|t|=2.73, df=23): qt(0.9995, 23) ≈ 3.77 > 2.73, not significant
+  r   <- make_fake_iarimax()
+  out <- capture.output(summary(r, alpha = 0.001))
+  combined <- paste(out, collapse = " ")
+  # Directions unchanged: still 3 positive, 1 negative
+  expect_match(combined, "Positive\\s*:\\s*3")
+  expect_match(combined, "Negative\\s*:\\s*1")
+  # Sig positive: only subjects 1 and 2
+  expect_match(combined, "Significant positive\\s*:\\s*2")
+  # Sig negative: subject 3 no longer significant
+  expect_match(combined, "Significant negative\\s*:\\s*0")
+})
+
 # ── summary.iarimax_results: alpha validation (Layer 1) ─────────────────────
 
 test_that("summary.iarimax_results errors on non-numeric alpha", {
@@ -332,6 +366,35 @@ test_that("plot.iarimax_results default alpha_crit_t uses 95% in y-axis and capt
   p <- plot(r)
   expect_match(p$labels$y,       "95%")
   expect_match(p$labels$caption, "95%")
+})
+
+test_that("plot.iarimax_results line_color maps correctly to significance", {
+  skip_if_not_installed("ggplot2")
+  r  <- make_fake_iarimax()
+  p  <- plot(r)
+  pd <- ggplot2::ggplot_build(p)
+
+  # The linerange layer is the second geom (after geom_point)
+  line_data <- pd$data[[2]]
+
+  # Subject 3: estimate = -0.2, SE = 0.08, df = 22 - 3 = 19
+  # CI entirely negative -> should be red
+  # Subject 1: estimate = 0.4, SE = 0.10, df = 23 - 2 = 21
+  # CI: 0.4 +/- qt(0.975,21)*0.10 = [0.19, 0.61] -> entirely positive -> green
+  expect_true("red"   %in% line_data$colour)
+  expect_true("green" %in% line_data$colour)
+})
+
+test_that("plot.iarimax_results REMA band matches meta_analysis CI", {
+  skip_if_not_installed("ggplot2")
+  r  <- make_fake_iarimax()
+  p  <- plot(r)
+  pd <- ggplot2::ggplot_build(p)
+
+  # The annotate("rect") layer is the last one (after point, linerange, hline, hline)
+  rect_data <- pd$data[[length(pd$data)]]
+  expect_equal(rect_data$ymin[1], r$meta_analysis$ci.lb, tolerance = 1e-8)
+  expect_equal(rect_data$ymax[1], r$meta_analysis$ci.ub, tolerance = 1e-8)
 })
 
 # ── sden_test errors when meta_analysis is NULL ───────────────────────────────

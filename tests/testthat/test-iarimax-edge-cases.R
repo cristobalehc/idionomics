@@ -62,6 +62,33 @@ test_that("subject with constant x is absent from results_df", {
   expect_false("flat_x" %in% res$results_df$id)
 })
 
+test_that("subject with variance exactly at minvar threshold is included", {
+  skip_on_cran()
+  # Build a series with known variance: var(c(rep(0, 24), v)) where v is chosen
+  # so that var == minvar. For minvar = 0.01, we need var = 0.01.
+  # var of c(rep(a, n-1), b) = (n-1)*(b-mean)^2 + ... easier to just pick a
+
+  # series and set minvar to its exact variance.
+  base <- make_panel(n_subjects = 2, n_obs = 25)
+  edge_y <- c(rep(0, 24), 0.5)  # var = 0.01020408...
+  edge_var <- var(edge_y)
+  edge <- data.frame(id = "edge_var", time = seq_len(25),
+                     x = rnorm(25), y = edge_y,
+                     stringsAsFactors = FALSE)
+  panel <- rbind(base, edge)
+
+  # At exactly this variance, the >= filter should include the subject
+  res <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
+                 id_var = "id", timevar = "time", minvar = edge_var)
+  expect_true("edge_var" %in% res$results_df$id)
+
+  # At a slightly higher threshold, the subject should be excluded
+  res2 <- iarimax(dataframe = panel, y_series = "y", x_series = "x",
+                  id_var = "id", timevar = "time",
+                  minvar = edge_var + .Machine$double.eps * 10)
+  expect_false("edge_var" %in% res2$results_df$id)
+})
+
 # ── Filtering: NAs reduce effective n ────────────────────────────────────────
 
 test_that("subject with many NA y rows can fall below min_n_subject", {
@@ -323,6 +350,25 @@ test_that("-Inf in y triggers an informative error", {
     regexp = "Inf"
   )
 })
+
+# ── NA in x: Kalman filter handles predictor missingness ─────────────────────
+
+test_that("subject with some NA in x is still estimated via Kalman filter", {
+  skip_on_cran()
+  panel_na       <- make_panel(n_subjects = 3, n_obs = 40, seed = 42)
+  rows_subj1     <- which(panel_na$id == "1")
+  panel_na$x[rows_subj1[1:5]] <- NA
+
+  res  <- iarimax(dataframe = panel_na, y_series = "y", x_series = "x",
+                  id_var = "id", timevar = "time")
+  row1 <- res$results_df[res$results_df$id == "1", ]
+
+  expect_true("1" %in% res$results_df$id)
+  expect_false(is.na(row1$estimate_x))
+  expect_true(row1$n_valid < 40)
+})
+
+# ── NaN in y ────────────────────────────────────────────────────────────────
 
 test_that("NaN in y (not NA): treated as missing, filtered if too few remain", {
   skip_on_cran()

@@ -274,3 +274,24 @@ test_that("larger |t-statistic| produces smaller p-value on real iarimax output"
   # rank correlation between |t| and p-value should be strongly negative
   expect_true(cor(t_abs, pvals, method = "spearman") < -0.9)
 })
+
+# ── df formula sensitivity: ML (n - k) vs OLS (n - k - 1) ──────────────────
+
+test_that("i_pval uses n_valid - n_params, not n_valid - n_params - 1", {
+  fake   <- make_fake_iarimax()
+  result <- i_pval(fake)
+
+  est <- fake$results_df$estimate_x[1]
+  se  <- fake$results_df[["std.error_x"]][1]
+  n   <- fake$results_df$n_valid[1]
+  k   <- fake$results_df$n_params[1]
+
+  correct_df <- n - k
+  wrong_df   <- n - k - 1
+  correct_p  <- 2 * stats::pt(-abs(est / se), df = correct_df)
+  wrong_p    <- 2 * stats::pt(-abs(est / se), df = wrong_df)
+
+  expect_equal(result$results_df$pval_x[1], correct_p, tolerance = 1e-12)
+  expect_false(isTRUE(all.equal(result$results_df$pval_x[1], wrong_p,
+                                tolerance = 1e-6)))
+})

@@ -567,3 +567,54 @@ test_that("report column order groups by metric type across all cols", {
                       "pass_overall")
   expect_equal(names(result), expected_order)
 })
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Inf / NaN in data columns
+# ══════════════════════════════════════════════════════════════════════════════
+
+test_that("Inf in a screened column triggers an informative error", {
+  df <- make_screen_df()
+  df$x[1] <- Inf
+  expect_error(
+    i_screener(df, cols = "x", id_var = "id", min_n_subject = 2),
+    regexp = "Inf"
+  )
+})
+
+test_that("-Inf in a screened column triggers an informative error", {
+  df <- make_screen_df()
+  df$x[1] <- -Inf
+  expect_error(
+    i_screener(df, cols = "x", id_var = "id", min_n_subject = 2),
+    regexp = "Inf"
+  )
+})
+
+test_that("NaN in a screened column is treated as NA (reduces n_valid)", {
+  df <- data.frame(
+    id = rep(c("A", "B"), each = 5),
+    x  = c(1, 2, 3, 4, 5,
+           NaN, 2, 3, 4, 5),
+    stringsAsFactors = FALSE
+  )
+  result <- i_screener(df, cols = "x", id_var = "id",
+                       min_n_subject = 2, mode = "report")
+  expect_equal(result$x_n_valid[result$id == "B"], 4L)
+})
+
+test_that("max_mode_pct = NaN triggers an informative error", {
+  df <- make_screen_df()
+  expect_error(
+    i_screener(df, cols = "x", id_var = "id", max_mode_pct = NaN),
+    regexp = "max_mode_pct"
+  )
+})
+
+test_that("max_mode_pct = NA triggers an informative error", {
+  df <- make_screen_df()
+  expect_error(
+    i_screener(df, cols = "x", id_var = "id", max_mode_pct = NA),
+    regexp = "max_mode_pct"
+  )
+})

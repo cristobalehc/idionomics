@@ -6,7 +6,8 @@
 #'
 #' @export
 #'
-#' @param dataframe Your dataframe.
+#' @param dataframe A data frame containing time-series data for all subjects,
+#'   with columns for the loop variables, subject ID, and time variable.
 #' @param a_series,b_series,c_series Strings naming the three loop variables.
 #' @param id_var String naming the subject ID variable.
 #' @param timevar String naming the time variable (must be complete, no NAs, and numeric see \code{\link{iarimax}()}).

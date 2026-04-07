@@ -178,7 +178,7 @@ i_screener <- function(df, cols, id_var,
     stop("'min_sd' must be a finite positive number.")
   }
   if (!is.null(max_mode_pct) && (!is.numeric(max_mode_pct) || length(max_mode_pct) != 1 ||
-      max_mode_pct <= 0 || max_mode_pct > 1)) {
+      !is.finite(max_mode_pct) || max_mode_pct <= 0 || max_mode_pct > 1)) {
     stop("'max_mode_pct' must be a number strictly greater than 0 and at most 1.")
   }
   if (!filter_type %in% c("joint", "per_column")) {

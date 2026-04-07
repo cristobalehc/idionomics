@@ -1,10 +1,10 @@
 #' Run I-ARIMAX algorithm.
 #'
 #' @export
-#' @importFrom utils globalVariables
 #' @importFrom rlang :=
 #'
-#' @param dataframe Your dataframe.
+#' @param dataframe A data frame containing time-series data for all subjects,
+#'   with columns for the outcome, predictor(s), subject ID, and time variable.
 #' @param min_n_subject Integer. Subjects with fewer than \code{min_n_subject}
 #'   pairwise-complete observations (across \code{y_series} and all
 #'   \code{x_series}) are excluded. The threshold is inclusive (\code{>=}).
@@ -258,7 +258,7 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
                     dplyr::if_all(dplyr::all_of(x_series), ~ !is.na(.x))) |> #Filter all that are complete in all variables.
     dplyr::summarise(
       count = dplyr::n(), #Use counts to filter.
-      var_outcome = stats::var(!!y_series_sym, na.rm = TRUE), #use variance to filter.
+      var_outcome_check4242 = stats::var(!!y_series_sym, na.rm = TRUE), #use variance to filter.
       dplyr::across(dplyr::all_of(x_series), ~ stats::var(.x, na.rm = TRUE), .names = "var_{.col}"), #Variance for each predictor.
       .groups = 'drop'
     ) |>
@@ -273,7 +273,8 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
 
   #Stop if not enough subjects.
   if (length(subjects) <= 1){
-    stop(paste("There are not enough cases to run the iarimax algorithm. You have", length(subjects),"valid cases."))
+    stop(paste("There are not enough cases to run the iarimax algorithm. You have", length(subjects),
+                if (length(subjects) == 1) "valid case." else "valid cases."))
   }
 
   if (verbose) {
@@ -520,4 +521,4 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
 }
 
 
-utils::globalVariables(c("count", "var_outcome")) #Declare symbolic global variables.
+utils::globalVariables(c("count", "var_outcome_check4242")) #Declare symbolic global variables.

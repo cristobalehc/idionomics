@@ -32,7 +32,8 @@ internally.}
 \item{...}{Additional arguments (ignored).}
 }
 \value{
-A ggplot2 object.
+A ggplot2 object. Subjects with \code{NA} estimates (e.g., from
+failed \code{auto.arima} fits) are silently excluded from the plot.
 }
 \description{
 Caterpillar plot method for iarimax_results objects.

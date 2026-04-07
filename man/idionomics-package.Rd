@@ -4,7 +4,7 @@
 \name{idionomics-package}
 \alias{idionomics}
 \alias{idionomics-package}
-\title{idionomics: Conduct Idiographic-Nomothetic Analyses for Psych Science}
+\title{idionomics: Conduct Idiographic-Nomothetic Analyses for Psychological Science}
 \description{
 A toolkit for idionomic science, a research philosophy that places the individual at the center of analysis. Rather than fitting a single model to the group and treating between-person averages as the primary finding, idionomic methods model each person's time series independently and then aggregate upward using random-effects meta-analysis that explicitly represents and quantifies between-person heterogeneity. The package targets intensive longitudinal data such as experience-sampling, ecological momentary assessment, and daily diary designs. It provides a complete pipeline: data quality screening ('i_screener()'), within-person standardization ('pmstandardize()'), linear detrending ('i_detrender()'), per-subject ARIMAX modeling and meta-analysis ('iarimax()'), individual p-values ('i_pval()'), Sign Divergence and Equisyncratic Null tests ('sden_test()'), and directed loop detection ('looping_machine()').
 }

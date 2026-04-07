@@ -274,3 +274,48 @@ test_that("REMA pooled estimate recovers the true effect (0.5) in a larger panel
               label = paste("REMA estimate", round(rema_est, 3),
                             "should be within 0.35 of true value 0.5"))
 })
+
+# ── REML method guard ─────────────────────────────────────────────────────────
+
+test_that("meta_analysis uses REML estimation method", {
+  result <- .get_result()
+  expect_match(result$meta_analysis$method, "REML")
+})
+
+# ── End-to-end pipeline integration ──────────────────────────────────────────
+
+test_that("full pipeline (i_screener -> pmstandardize -> i_detrender -> iarimax -> i_pval -> sden_test) runs end-to-end", {
+  skip_on_cran()
+  panel <- make_panel(n_subjects = 5, n_obs = 35, seed = 123)
+
+  # Step 0: screen
+  df_clean <- i_screener(panel, cols = c("y", "x"), id_var = "id",
+                         min_n_subject = 20)
+
+  # Step 1: standardize
+  df_psd <- pmstandardize(df_clean, cols = c("y", "x"), id_var = "id")
+  expect_true("y_psd" %in% names(df_psd))
+  expect_true("x_psd" %in% names(df_psd))
+
+  # Step 2: detrend
+  df_ready <- i_detrender(df_psd, cols = c("y_psd", "x_psd"),
+                          id_var = "id", timevar = "time")
+  expect_true("y_psd_dt" %in% names(df_ready))
+  expect_true("x_psd_dt" %in% names(df_ready))
+
+  # Step 3: model
+  result <- iarimax(df_ready, y_series = "y_psd_dt", x_series = "x_psd_dt",
+                    id_var = "id", timevar = "time")
+  expect_s3_class(result, "iarimax_results")
+  expect_true(nrow(result$results_df) >= 2)
+
+  # Step 4: p-values
+  result <- i_pval(result)
+  expect_true("pval_x_psd_dt" %in% names(result$results_df))
+
+  # Step 5: sden_test
+  sden <- suppressMessages(sden_test(result))
+  expect_s3_class(sden, "sden_results")
+  expect_true(sden$sden_parameters$test_pval >= 0)
+  expect_true(sden$sden_parameters$test_pval <= 1)
+})

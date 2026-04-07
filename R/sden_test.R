@@ -145,7 +145,7 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
       message('Running Equisyncratic Null Test (ENT)')
 
       sig_effects <-  all_sig_sum
-      pnull <- ifelse(is.null(alpha_binom), alpha_arimax, alpha_binom)
+      pnull <- if (!is.null(alpha_binom)) alpha_binom else alpha_arimax
       ttype <- 'ENT'
 
     }
@@ -153,7 +153,7 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
       message('Running Sign Divergence Test (SDT): number of negative cases (counter positive pooled-effect) values are being evaluated')
 
       sig_effects <- negative_sig_sum
-      pnull <- ifelse(is.null(alpha_binom), alpha_arimax/2, alpha_binom)
+      pnull <- if (!is.null(alpha_binom)) alpha_binom else alpha_arimax / 2
       ttype <- 'SDT counter-positive'
 
     }
@@ -162,7 +162,7 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
       message('Running Sign Divergence Test (SDT): number of positive cases (counter negative pooled-effect) values are being evaluated')
 
       sig_effects <- positive_sig_sum
-      pnull <- ifelse(is.null(alpha_binom), alpha_arimax/2, alpha_binom)
+      pnull <- if (!is.null(alpha_binom)) alpha_binom else alpha_arimax / 2
       ttype <- 'SDT counter-negative'
 
     }
@@ -171,7 +171,7 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
       message('Running Equisyncratic Null Test (ENT).')
 
       sig_effects <- all_sig_sum
-      pnull <- ifelse(is.null(alpha_binom), alpha_arimax, alpha_binom)
+      pnull <- if (!is.null(alpha_binom)) alpha_binom else alpha_arimax
       ttype <- 'ENT'
 
     }
@@ -189,7 +189,7 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
       }
 
       sig_effects <- negative_sig_sum
-      pnull <- ifelse(is.null(alpha_binom), alpha_arimax/2, alpha_binom)
+      pnull <- if (!is.null(alpha_binom)) alpha_binom else alpha_arimax / 2
       ttype <- 'SDT counter-positive'
 
 
@@ -204,7 +204,7 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
       message('Running Sign Divergence Test (SDT): number of positive cases (counter negative pooled-effect) values are being evaluated')
 
       sig_effects <- positive_sig_sum
-      pnull <- ifelse(is.null(alpha_binom), alpha_arimax/2, alpha_binom)
+      pnull <- if (!is.null(alpha_binom)) alpha_binom else alpha_arimax / 2
       ttype <- 'SDT counter-negative'
 
 
@@ -214,7 +214,7 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
       message('Running Equisyncratic Null Test (ENT).')
 
       sig_effects <- all_sig_sum
-      pnull <- ifelse(is.null(alpha_binom), alpha_arimax, alpha_binom)
+      pnull <- if (!is.null(alpha_binom)) alpha_binom else alpha_arimax
       ttype <- 'ENT'
 
     }
@@ -230,7 +230,7 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
     }
 
     sig_effects <- all_sig_sum
-    pnull <- ifelse(is.null(alpha_binom), alpha_arimax, alpha_binom)
+    pnull <- if (!is.null(alpha_binom)) alpha_binom else alpha_arimax
     ttype <- 'ENT'
 
   }

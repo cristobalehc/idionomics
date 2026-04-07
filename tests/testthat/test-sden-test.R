@@ -61,12 +61,14 @@ make_fake_sden_input <- function(n_pos  = 3,
 
 # ── Attributes ────────────────────────────────────────────────────────────────
 
-test_that("sden_results inherits focal_predictor, id_var, and timevar attributes from iarimax object", {
+test_that("sden_results inherits focal_predictor, id_var, timevar, and outcome attributes from iarimax object", {
   fake   <- make_fake_sden_input()
+  attr(fake, "outcome") <- "happiness"
   result <- suppressMessages(sden_test(fake))
   expect_equal(attr(result, "focal_predictor"), attr(fake, "focal_predictor"))
   expect_equal(attr(result, "id_var"),          attr(fake, "id_var"))
   expect_equal(attr(result, "timevar"),         attr(fake, "timevar"))
+  expect_equal(attr(result, "outcome"),         "happiness")
 })
 
 test_that("sden_results is of class sden_results", {
@@ -229,6 +231,12 @@ test_that("auto mode uses hardcoded 0.05 pivot, not alpha_arimax, for test selec
   expect_equal(r_lax$sden_parameters$test_type, "ENT")
 })
 
+test_that("auto: rema_pval exactly 0.05 selects ENT (>= branch)", {
+  fake   <- make_fake_sden_input(rema_beta = 0.5, rema_pval = 0.05)
+  result <- suppressMessages(sden_test(fake, test = "auto"))
+  expect_equal(result$sden_parameters$test_type, "ENT")
+})
+
 # ── Manual test selection ─────────────────────────────────────────────────────
 
 test_that("test = 'ENT' forces ENT regardless of REMA", {
@@ -378,4 +386,13 @@ test_that("sden_test works for non-focal predictor on real multi-predictor outpu
   expect_s3_class(r, "sden_results")
   expect_equal(r$sden_parameters$test_pval,
                r$binomial_test$p.value, tolerance = 1e-12)
+
+  # Verify the re-estimated REMA uses x2 coefficients, not the original focal x
+  manual_rma <- metafor::rma(yi = result2$results_df$estimate_x2,
+                             sei = result2$results_df[["std.error_x2"]],
+                             method = "REML")
+  expect_equal(r$sden_parameters$rema_beta, as.numeric(manual_rma$beta),
+               tolerance = 1e-10)
+  expect_equal(r$sden_parameters$rema_pval, manual_rma$pval,
+               tolerance = 1e-10)
 })

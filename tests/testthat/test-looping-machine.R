@@ -308,6 +308,41 @@ test_that("alpha outside (0, 1) raises an informative error", {
 })
 
 
+# ── Inf/NaN rejection ──────────────────────────────────────────────────────
+
+test_that("Inf in a loop series triggers an informative error", {
+  panel <- make_tiny_loop_panel()
+  panel$a[1] <- Inf
+  expect_error(
+    looping_machine(panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", min_n_subject = 1),
+    regexp = "Inf"
+  )
+})
+
+test_that("-Inf in a loop series triggers an informative error", {
+  panel <- make_tiny_loop_panel()
+  panel$b[1] <- -Inf
+  expect_error(
+    looping_machine(panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", min_n_subject = 1),
+    regexp = "Inf"
+  )
+})
+
+test_that("Inf in a covariate column triggers an informative error", {
+  panel <- make_tiny_loop_panel()
+  panel$cov1 <- rnorm(nrow(panel))
+  panel$cov1[1] <- Inf
+  expect_error(
+    looping_machine(panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", covariates = "cov1",
+                    min_n_subject = 1),
+    regexp = "Inf"
+  )
+})
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Layer 2a — Minimal integration (NO skip_on_cran, always runs under covr)
 # ══════════════════════════════════════════════════════════════════════════════
@@ -940,4 +975,27 @@ test_that("Loop_positive_directed logic is consistent with conjunction formula o
     df[["a_b_pval"]] < al & df[["b_c_pval"]] < al & df[["c_a_pval"]] < al
   )
   expect_equal(df[["Loop_positive_directed"]], expected)
+})
+
+test_that("fixed_d is forwarded to all three legs", {
+  skip_on_cran()
+  r_d0 <- suppressMessages(
+    looping_machine(panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", fixed_d = 0)
+  )
+  expect_true(all(r_d0$iarimax_a_to_b$results_df$nI == 0, na.rm = TRUE))
+  expect_true(all(r_d0$iarimax_b_to_c$results_df$nI == 0, na.rm = TRUE))
+  expect_true(all(r_d0$iarimax_c_to_a$results_df$nI == 0, na.rm = TRUE))
+})
+
+test_that("non-default alpha changes Loop_positive_directed classification", {
+  skip_on_cran()
+  r_lax    <- .get_result()  # default alpha = 0.05
+  r_strict <- suppressMessages(
+    looping_machine(panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", alpha = 0.001)
+  )
+  n_lax    <- sum(r_lax$loop_df$Loop_positive_directed == 1L, na.rm = TRUE)
+  n_strict <- sum(r_strict$loop_df$Loop_positive_directed == 1L, na.rm = TRUE)
+  expect_true(n_strict <= n_lax)
 })
