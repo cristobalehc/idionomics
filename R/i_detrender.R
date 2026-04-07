@@ -4,7 +4,7 @@
 #'
 #' @param df A dataframe. Any existing grouping is removed before processing.
 #' @param cols A non-empty character vector of column names to detrend.
-#' @param idvar A string naming the ID variable (one variable only).
+#' @param id_var A string naming the ID variable (one variable only).
 #' @param timevar A string naming the time variable used for linear detrending. Must
 #'   be numeric and complete — no missing values allowed.
 #' @param min_n_subject Integer. Subjects with fewer than `min_n_subject`
@@ -63,16 +63,16 @@
 #' }))
 #'
 #' # Detrend x within each person (returns original df + x_dt)
-#' result <- i_detrender(panel, cols = "x", idvar = "id", timevar = "time")
+#' result <- i_detrender(panel, cols = "x", id_var = "id", timevar = "time")
 #' head(result)
 #'
 #' # Return only id, time, and detrended columns
-#' result_slim <- i_detrender(panel, cols = "x", idvar = "id",
+#' result_slim <- i_detrender(panel, cols = "x", id_var = "id",
 #'                            timevar = "time", append = FALSE)
 #' head(result_slim)
 #' })
 
-i_detrender <- function(df, cols, idvar, timevar,
+i_detrender <- function(df, cols, id_var, timevar,
                         min_n_subject = 20, minvar = 0.01,
                         verbose = FALSE, append = TRUE) {
 
@@ -82,8 +82,8 @@ i_detrender <- function(df, cols, idvar, timevar,
   }
 
   #id var as single character string.
-  if (!is.character(idvar) || length(idvar) != 1) {
-    stop("'idvar' must be a single character string.")
+  if (!is.character(id_var) || length(id_var) != 1) {
+    stop("'id_var' must be a single character string.")
   }
 
   #timevar single character string.
@@ -104,7 +104,7 @@ i_detrender <- function(df, cols, idvar, timevar,
   }
 
   # Check if the provided variables are in the dataframe
-  required_vars <- c(cols, idvar, timevar)
+  required_vars <- c(cols, id_var, timevar)
 
   if (!all(required_vars %in% colnames(df))) {
     missing_vars <- required_vars[!required_vars %in% colnames(df)]
@@ -144,12 +144,12 @@ i_detrender <- function(df, cols, idvar, timevar,
   }
 
   #Create symbolic variables.
-  idvar_sym   <- rlang::sym(idvar)
+  id_var_sym   <- rlang::sym(id_var)
   timevar_sym <- rlang::sym(timevar)
 
   #Run linear detrending.
   df <- df |>
-    dplyr::group_by(!!idvar_sym) |> #Group by id variable.
+    dplyr::group_by(!!id_var_sym) |> #Group by id variable.
     dplyr::mutate(dplyr::across( #loop through all columns.
       dplyr::all_of(cols),
       ~ {
@@ -181,6 +181,6 @@ i_detrender <- function(df, cols, idvar, timevar,
   } else {
     dt_cols <- paste0(cols, "_dt")
     return(df |>
-      dplyr::select(!!idvar_sym, !!timevar_sym, dplyr::all_of(dt_cols)))
+      dplyr::select(!!id_var_sym, !!timevar_sym, dplyr::all_of(dt_cols)))
   }
 }

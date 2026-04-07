@@ -11,7 +11,7 @@
 #'
 #' @param df A dataframe. Any existing grouping is removed before processing.
 #' @param cols A non-empty character vector of column names to screen.
-#' @param idvar A string naming the ID variable (one variable only).
+#' @param id_var A string naming the ID variable (one variable only).
 #' @param min_n_subject Integer. Subjects or columns with fewer than `min_n_subject`
 #'   non-`NA` observations in a given column fail this criterion. Defaults to
 #'   `20`, matching [iarimax()]'s default threshold.
@@ -104,20 +104,20 @@
 #' }))
 #'
 #' # Remove subjects failing default min_n_subject = 20 or a minimum SD criterion
-#' result <- i_screener(panel, cols = c("x", "y"), idvar = "id", min_sd = 0.5)
+#' result <- i_screener(panel, cols = c("x", "y"), id_var = "id", min_sd = 0.5)
 #'
 #' # Inspect which subjects would be removed without committing
-#' flagged <- i_screener(panel, cols = c("x", "y"), idvar = "id",
+#' flagged <- i_screener(panel, cols = c("x", "y"), id_var = "id",
 #'                     min_sd = 0.5, mode = "flag")
 #' table(flagged$pass_overall)
 #'
 #' # Retrieve a per-subject quality summary
-#' report <- i_screener(panel, cols = c("x", "y"), idvar = "id",
+#' report <- i_screener(panel, cols = c("x", "y"), id_var = "id",
 #'                    min_sd = 0.5, mode = "report")
 #' print(report)
 #' })
 
-i_screener <- function(df, cols, idvar,
+i_screener <- function(df, cols, id_var,
                      min_n_subject = 20,
                      min_sd        = NULL,
                      max_mode_pct = NULL,
@@ -130,12 +130,12 @@ i_screener <- function(df, cols, idvar,
     stop("'cols' must contain at least one column name.")
   }
 
-  if (!is.character(idvar) || length(idvar) != 1) {
-    stop("'idvar' must be a single character string.")
+  if (!is.character(id_var) || length(id_var) != 1) {
+    stop("'id_var' must be a single character string.")
   }
 
   # Check if the provided variables are in the dataframe.
-  required_vars <- c(cols, idvar)
+  required_vars <- c(cols, id_var)
   if (!all(required_vars %in% colnames(df))) {
     missing_vars <- required_vars[!required_vars %in% colnames(df)]
     stop(paste(
@@ -186,10 +186,10 @@ i_screener <- function(df, cols, idvar,
   df <- dplyr::ungroup(df)
 
   #Create symbolic variable.
-  idvar_sym <- rlang::sym(idvar)
+  id_var_sym <- rlang::sym(id_var)
 
   #Calculate the original n_subjects.
-  n_subjects_original <- length(unique(df[[idvar]]))
+  n_subjects_original <- length(unique(df[[id_var]]))
 
   # Provide explanation, conditional to verbose = TRUE.
   if (verbose) {
@@ -210,7 +210,7 @@ i_screener <- function(df, cols, idvar,
 
   # Compute per-subject, per-column quality metrics.
   metrics <- df |>
-    dplyr::group_by(!!idvar_sym) |>
+    dplyr::group_by(!!id_var_sym) |>
     dplyr::summarise(
       dplyr::across(
         dplyr::all_of(cols),
@@ -275,7 +275,7 @@ i_screener <- function(df, cols, idvar,
   # IF mode == "report", return a per-subject quality summary table.
   if (mode == "report") {
     out_cols <- c( #Create vector with names, to reorder output by metric.
-      idvar,
+      id_var,
       paste0(cols, "_n_valid"),
       paste0(cols, "_sd"),
       paste0(cols, "_mode_pct"),
@@ -288,27 +288,27 @@ i_screener <- function(df, cols, idvar,
   # IF mode == "flag", append pass/fail columns to the original dataframe.
   if (mode == "flag") {
     if (filter_type == "joint") {
-      pass_info <- metrics[, idvar, drop = FALSE]
+      pass_info <- metrics[, id_var, drop = FALSE]
       pass_info$pass_overall <- metrics$pass_overall
-      return(dplyr::left_join(df, pass_info, by = idvar))
+      return(dplyr::left_join(df, pass_info, by = id_var))
     } #if filter_type = "per_column"
     else {
       pass_info <- metrics |>
-        dplyr::select(!!idvar_sym, dplyr::all_of(pass_cols))
-      return(dplyr::left_join(df, pass_info, by = idvar))
+        dplyr::select(!!id_var_sym, dplyr::all_of(pass_cols))
+      return(dplyr::left_join(df, pass_info, by = id_var))
     }
   }
   #Else:  mode = filter.
   # IF mode == "filter" + filter_type == "joint", remove failing subjects entirely.
   # IF mode == "filter" + filter_type == "per_column", set failing column values to NA.
   if (filter_type == "joint") {
-    keep_ids <- metrics[[idvar]][metrics$pass_overall]
-    return(df |> dplyr::filter(!!idvar_sym %in% keep_ids))
+    keep_ids <- metrics[[id_var]][metrics$pass_overall]
+    return(df |> dplyr::filter(!!id_var_sym %in% keep_ids))
   }
   else {
     pass_info <- metrics |>
-      dplyr::select(!!idvar_sym, dplyr::all_of(pass_cols))
-    df <- dplyr::left_join(df, pass_info, by = idvar)
+      dplyr::select(!!id_var_sym, dplyr::all_of(pass_cols))
+    df <- dplyr::left_join(df, pass_info, by = id_var)
     #Set failing column values to NA.
     for (col in cols) {
       pass_col <- paste0(col, "_pass")

@@ -61,7 +61,7 @@ Before standardizing, screen subjects on their raw data. After `pmstandardize()`
 panel_clean <- i_screener(
   panel,
   cols    = c("x", "y"),
-  idvar   = "id",
+  id_var   = "id",
   min_sd  = 0.3,
   verbose = TRUE
 )
@@ -78,7 +78,7 @@ Three criteria are available (all optional except `min_n_subject`):
 Use `mode = "report"` to inspect quality metrics without committing to exclusion:
 
 ```{r screener-report}
-report <- i_screener(panel, cols = c("x", "y"), idvar = "id",
+report <- i_screener(panel, cols = c("x", "y"), id_var = "id",
                      min_sd = 0.3, mode = "report")
 print(report)
 ```
@@ -90,7 +90,7 @@ print(report)
 Person-mean standardization computes `(x - person_mean) / person_sd` for each subject and column. This removes between-person differences in level and scale, making coefficients comparable across subjects. Output columns are named `<col>_psd`.
 
 ```{r pmstandardize}
-panel_std <- pmstandardize(panel_clean, cols = c("x", "y"), idvar = "id")
+panel_std <- pmstandardize(panel_clean, cols = c("x", "y"), id_var = "id")
 head(panel_std[, c("id", "time", "x_psd", "y_psd")])
 ```
 
@@ -108,7 +108,7 @@ Filtering is per-column and independent: a subject can produce valid detrended r
 panel_dt <- i_detrender(
   panel_std,
   cols    = c("x_psd", "y_psd"),
-  idvar   = "id",
+  id_var   = "id",
   timevar = "time",
   verbose = TRUE
 )
@@ -194,15 +194,15 @@ summary(sden)
 library(idionomics)
 
 # 1. Screen raw data
-panel_clean <- i_screener(panel, cols = c("x", "y"), idvar = "id",
+panel_clean <- i_screener(panel, cols = c("x", "y"), id_var = "id",
                           min_sd = 0.3)
 
 # 2. Within-person standardize
-panel_std <- pmstandardize(panel_clean, cols = c("x", "y"), idvar = "id")
+panel_std <- pmstandardize(panel_clean, cols = c("x", "y"), id_var = "id")
 
 # 3. Detrend
 panel_dt <- i_detrender(panel_std, cols = c("x_psd", "y_psd"),
-                        idvar = "id", timevar = "time")
+                        id_var = "id", timevar = "time")
 
 # 4. I-ARIMAX
 result <- iarimax(panel_dt, y_series = "y_psd_dt", x_series = "x_psd_dt",

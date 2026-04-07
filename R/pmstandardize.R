@@ -7,7 +7,7 @@
 #'
 #' @param df A dataframe. Any existing grouping is removed before processing.
 #' @param cols A non-empty character vector of column names to standardize.
-#' @param idvar A string naming the ID variable (one variable only).
+#' @param id_var A string naming the ID variable (one variable only).
 #' @param verbose If `TRUE`, prints a description of the transformation rules
 #'   (default `FALSE`).
 #' @param append If `TRUE` (default), returns the original dataframe with the
@@ -44,28 +44,28 @@
 #' }))
 #'
 #' # Standardize x and y within each person (append = TRUE, the default)
-#' result <- pmstandardize(panel, cols = c("x", "y"), idvar = "id")
+#' result <- pmstandardize(panel, cols = c("x", "y"), id_var = "id")
 #' head(result)  # original columns + x_psd + y_psd
 #'
 #' # Return only the ID and standardized columns
-#' result_slim <- pmstandardize(panel, cols = "x", idvar = "id", append = FALSE)
+#' result_slim <- pmstandardize(panel, cols = "x", id_var = "id", append = FALSE)
 #' head(result_slim)
 #' })
 
-pmstandardize <- function(df, cols, idvar, verbose = FALSE, append = TRUE) {
+pmstandardize <- function(df, cols, id_var, verbose = FALSE, append = TRUE) {
 
   # Guard: cols must be non-empty
   if (length(cols) == 0) {
     stop("'cols' must contain at least one column name.")
   }
 
-  # Check if idvar is character and length = 1.
-  if (!is.character(idvar) || length(idvar) != 1) {
-    stop("'idvar' must be a single character string.")
+  # Check if id_var is character and length = 1.
+  if (!is.character(id_var) || length(id_var) != 1) {
+    stop("'id_var' must be a single character string.")
   }
 
   # Check if the provided variables are in the dataframe
-  required_vars <- c(cols, idvar)
+  required_vars <- c(cols, id_var)
 
   if (!all(required_vars %in% colnames(df))) {
     missing_vars <- required_vars[!required_vars %in% colnames(df)]
@@ -86,7 +86,7 @@ pmstandardize <- function(df, cols, idvar, verbose = FALSE, append = TRUE) {
 
   # Apply within-person z-scoring.
   df <- df |>
-    dplyr::group_by(!!rlang::sym(idvar)) |>
+    dplyr::group_by(!!rlang::sym(id_var)) |>
     dplyr::mutate(dplyr::across(
       dplyr::all_of(cols),
       ~ if (all(is.na(.))) {
@@ -111,7 +111,7 @@ pmstandardize <- function(df, cols, idvar, verbose = FALSE, append = TRUE) {
   else {
     standardized_cols <- paste0(cols, "_psd")
     return(df |>
-      dplyr::select(!!rlang::sym(idvar), dplyr::all_of(standardized_cols)))
+      dplyr::select(!!rlang::sym(id_var), dplyr::all_of(standardized_cols)))
   }
 
 }

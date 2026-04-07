@@ -7,7 +7,7 @@
 i_screener(
   df,
   cols,
-  idvar,
+  id_var,
   min_n_subject = 20,
   min_sd = NULL,
   max_mode_pct = NULL,
@@ -21,7 +21,7 @@ i_screener(
 
 \item{cols}{A non-empty character vector of column names to screen.}
 
-\item{idvar}{A string naming the ID variable (one variable only).}
+\item{id_var}{A string naming the ID variable (one variable only).}
 
 \item{min_n_subject}{Integer. Subjects or columns with fewer than \code{min_n_subject}
 non-\code{NA} observations in a given column fail this criterion. Defaults to
@@ -137,15 +137,15 @@ panel <- do.call(rbind, lapply(1:4, function(id) {
 }))
 
 # Remove subjects failing default min_n_subject = 20 or a minimum SD criterion
-result <- i_screener(panel, cols = c("x", "y"), idvar = "id", min_sd = 0.5)
+result <- i_screener(panel, cols = c("x", "y"), id_var = "id", min_sd = 0.5)
 
 # Inspect which subjects would be removed without committing
-flagged <- i_screener(panel, cols = c("x", "y"), idvar = "id",
+flagged <- i_screener(panel, cols = c("x", "y"), id_var = "id",
                     min_sd = 0.5, mode = "flag")
 table(flagged$pass_overall)
 
 # Retrieve a per-subject quality summary
-report <- i_screener(panel, cols = c("x", "y"), idvar = "id",
+report <- i_screener(panel, cols = c("x", "y"), id_var = "id",
                    min_sd = 0.5, mode = "report")
 print(report)
 })

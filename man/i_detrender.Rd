@@ -7,7 +7,7 @@
 i_detrender(
   df,
   cols,
-  idvar,
+  id_var,
   timevar,
   min_n_subject = 20,
   minvar = 0.01,
@@ -20,7 +20,7 @@ i_detrender(
 
 \item{cols}{A non-empty character vector of column names to detrend.}
 
-\item{idvar}{A string naming the ID variable (one variable only).}
+\item{id_var}{A string naming the ID variable (one variable only).}
 
 \item{timevar}{A string naming the time variable used for linear detrending. Must
 be numeric and complete — no missing values allowed.}
@@ -89,11 +89,11 @@ panel <- do.call(rbind, lapply(1:3, function(id) {
 }))
 
 # Detrend x within each person (returns original df + x_dt)
-result <- i_detrender(panel, cols = "x", idvar = "id", timevar = "time")
+result <- i_detrender(panel, cols = "x", id_var = "id", timevar = "time")
 head(result)
 
 # Return only id, time, and detrended columns
-result_slim <- i_detrender(panel, cols = "x", idvar = "id",
+result_slim <- i_detrender(panel, cols = "x", id_var = "id",
                            timevar = "time", append = FALSE)
 head(result_slim)
 })

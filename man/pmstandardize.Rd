@@ -4,14 +4,14 @@
 \alias{pmstandardize}
 \title{Person-level standardize (within-person z-score) time series.}
 \usage{
-pmstandardize(df, cols, idvar, verbose = FALSE, append = TRUE)
+pmstandardize(df, cols, id_var, verbose = FALSE, append = TRUE)
 }
 \arguments{
 \item{df}{A dataframe. Any existing grouping is removed before processing.}
 
 \item{cols}{A non-empty character vector of column names to standardize.}
 
-\item{idvar}{A string naming the ID variable (one variable only).}
+\item{id_var}{A string naming the ID variable (one variable only).}
 
 \item{verbose}{If \code{TRUE}, prints a description of the transformation rules
 (default \code{FALSE}).}
@@ -57,11 +57,11 @@ panel <- do.call(rbind, lapply(1:3, function(id) {
 }))
 
 # Standardize x and y within each person (append = TRUE, the default)
-result <- pmstandardize(panel, cols = c("x", "y"), idvar = "id")
+result <- pmstandardize(panel, cols = c("x", "y"), id_var = "id")
 head(result)  # original columns + x_psd + y_psd
 
 # Return only the ID and standardized columns
-result_slim <- pmstandardize(panel, cols = "x", idvar = "id", append = FALSE)
+result_slim <- pmstandardize(panel, cols = "x", id_var = "id", append = FALSE)
 head(result_slim)
 })
 }
