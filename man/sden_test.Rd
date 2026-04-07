@@ -52,7 +52,7 @@ Run Sign Divergence or Equisyncratic Null tests.
 }
 \examples{
 \donttest{
-set.seed(1)
+set.seed(42)
 panel <- do.call(rbind, lapply(1:6, function(id) {
   x <- rnorm(30)
   data.frame(id = as.character(id), time = seq_len(30),

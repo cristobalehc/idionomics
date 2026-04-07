@@ -116,7 +116,8 @@ summary.iarimax_results <- function(object, alpha = 0.05, ...) {
 #' @param alpha_crit_t Critical value for per-subject significance coloring. Defaults to 0.05.
 #' @param lims Numeric vector of length 2 setting the effect size axis limits. Defaults to \code{c(-1, 1)}.
 #' @param ... Additional arguments (ignored).
-#' @return A ggplot2 object.
+#' @return A ggplot2 object. Subjects with \code{NA} estimates (e.g., from
+#'   failed \code{auto.arima} fits) are silently excluded from the plot.
 #' @export
 #' @method plot iarimax_results
 #' @seealso [iarimax()], [summary.iarimax_results()], [i_pval()]
@@ -150,10 +151,10 @@ plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
     feature <- attr(x, "focal_predictor")
   }
 
-  # Guard: check feature exists in results_df.
   est_col <- paste0("estimate_",  feature)
   se_col  <- paste0("std.error_", feature)
 
+  # Guard: check feature exists in results_df.
   if (!est_col %in% colnames(x$results_df)) {
     stop("Feature '", feature, "' not found in results_df. ",
          "Check that you spelled the variable name correctly.")
@@ -164,7 +165,11 @@ plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
   est_sym    <- rlang::sym(est_col)
   se_sym     <- rlang::sym(se_col)
 
+  # Drop subjects with NA estimates (failed auto.arima fits) so that
+
+  # fct_reorder and ggplot receive only plottable rows.
   df_plt <- x$results_df |>
+    dplyr::filter(!is.na(!!est_sym)) |>
     dplyr::mutate(
       df_mod   = n_valid - n_params,
       crit_val = stats::qt(1 - (alpha_crit_t / 2), df_mod),

@@ -41,7 +41,7 @@
 #'
 #' @examples
 #' \donttest{
-#' set.seed(1)
+#' set.seed(42)
 #' panel <- do.call(rbind, lapply(1:6, function(id) {
 #'   x <- rnorm(30)
 #'   data.frame(id = as.character(id), time = seq_len(30),
@@ -123,7 +123,6 @@ sden_test <- function(iarimax_object,alpha_arimax = 0.05, alpha_binom = NULL, te
   #Stop if meta analysis is null.
   if (is.null(iarimax_object$meta_analysis)) {
     stop("sden_test requires a valid meta_analysis in the iarimax object, but it is NULL. ",
-         "This happens when fewer than 2 subjects have valid model estimates. ",
          "Check your iarimax output before calling sden_test().")
   }
 

@@ -118,10 +118,10 @@ pmstandardize <- function(df, cols, id_var, verbose = FALSE, append = TRUE) {
           NA_real_
         } else if (sum(!is.na(.)) < 2) {
           ifelse(is.na(.), NA_real_, 0)  # bare 0 would recycle to all positions, overwriting NAs; preserve structure
-        } else if (sd(., na.rm = TRUE) < .Machine$double.eps) {
+        } else if (stats::sd(., na.rm = TRUE) < .Machine$double.eps) {
           ifelse(is.na(.), NA_real_, 0)  # same: constant series may still have NA rows; keep them as NA
         } else {
-          (. - mean(., na.rm = TRUE)) / sd(., na.rm = TRUE)
+          (. - mean(., na.rm = TRUE)) / stats::sd(., na.rm = TRUE)
         },
       .names = "{.col}_psd"
     )) |>
