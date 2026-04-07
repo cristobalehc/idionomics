@@ -98,3 +98,8 @@ result_slim <- i_detrender(panel, cols = "x", id_var = "id",
 head(result_slim)
 })
 }
+\seealso{
+\code{\link[=i_screener]{i_screener()}} for upstream data quality screening,
+\code{\link[=pmstandardize]{pmstandardize()}} for within-person standardization, \code{\link[=iarimax]{iarimax()}} for
+per-subject modeling.
+}

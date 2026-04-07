@@ -20,10 +20,6 @@ Description: A toolkit for idionomic science, a research philosophy that places 
     ('iarimax()'), individual p-values ('i_pval()'), Sign Divergence and
     Equisyncratic Null tests ('sden_test()'), and directed loop detection
     ('looping_machine()').
-    For theoretical background on idionomic assessment, see Hernández, C.,
-    Sahdra, B. K., Ciarrochi, J., & Hayes, S. C. (2024). "Idionomic Assessment
-    of Mindfulness." Handbook of Assessment in Mindfulness Research, 1--27.
-    <doi:10.1007/978-3-030-77644-2_136-1>.
 URL: https://github.com/cristobalehc/idionomics
 BugReports: https://github.com/cristobalehc/idionomics/issues
 License: MIT + file LICENSE

@@ -65,3 +65,8 @@ result_slim <- pmstandardize(panel, cols = "x", id_var = "id", append = FALSE)
 head(result_slim)
 })
 }
+\seealso{
+\code{\link[=i_screener]{i_screener()}} for upstream data quality screening,
+\code{\link[=i_detrender]{i_detrender()}} for the next pipeline step, \code{\link[=iarimax]{iarimax()}} for per-subject
+modeling.
+}

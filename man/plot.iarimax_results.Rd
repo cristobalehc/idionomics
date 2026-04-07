@@ -51,3 +51,6 @@ plot(result)
 plot(result, y_series_name = "Mood", x_series_name = "Stress")
 }
 }
+\seealso{
+\code{\link[=iarimax]{iarimax()}}, \code{\link[=summary.iarimax_results]{summary.iarimax_results()}}, \code{\link[=i_pval]{i_pval()}}
+}

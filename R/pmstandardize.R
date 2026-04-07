@@ -29,6 +29,10 @@
 #' @return A dataframe with new `<col>_psd` columns containing the
 #'   within-person z-scores.
 #'
+#' @seealso [i_screener()] for upstream data quality screening,
+#'   [i_detrender()] for the next pipeline step, [iarimax()] for per-subject
+#'   modeling.
+#'
 #' @examples
 #' local({
 #' # Build a small panel: 3 subjects, 10 observations each

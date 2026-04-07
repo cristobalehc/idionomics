@@ -150,3 +150,7 @@ report <- i_screener(panel, cols = c("x", "y"), id_var = "id",
 print(report)
 })
 }
+\seealso{
+\code{\link[=pmstandardize]{pmstandardize()}} for the next pipeline step,
+\code{\link[=i_detrender]{i_detrender()}} for linear detrending, \code{\link[=iarimax]{iarimax()}} for per-subject modeling.
+}

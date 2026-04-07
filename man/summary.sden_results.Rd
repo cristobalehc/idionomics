@@ -31,3 +31,6 @@ sden <- sden_test(result)
 summary(sden)
 }
 }
+\seealso{
+\code{\link[=sden_test]{sden_test()}}, \code{\link[=iarimax]{iarimax()}}, \code{\link[=i_pval]{i_pval()}}
+}

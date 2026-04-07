@@ -8,6 +8,7 @@
 #' @importFrom stats predict
 #' @export
 #' @method summary iarimax_results
+#' @seealso [iarimax()], [plot.iarimax_results()], [i_pval()], [sden_test()]
 #' @examples
 #' \donttest{
 #' set.seed(1)
@@ -113,6 +114,7 @@ summary.iarimax_results <- function(object, alpha = 0.05, ...) {
 #' @return A ggplot2 object.
 #' @export
 #' @method plot iarimax_results
+#' @seealso [iarimax()], [summary.iarimax_results()], [i_pval()]
 #' @examples
 #' \donttest{
 #' set.seed(1)
@@ -221,6 +223,7 @@ plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
 #' @return Invisibly returns \code{object}, called for its side effect of printing.
 #' @export
 #' @method summary sden_results
+#' @seealso [sden_test()], [iarimax()], [i_pval()]
 #' @examples
 #' \donttest{
 #' set.seed(1)

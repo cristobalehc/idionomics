@@ -14,6 +14,10 @@
 #'   parameters increase n_params, widening the gap. If both estimate and SE are exactly zero,
 #'   the p-value is set to \code{NA} (not \code{NaN}).
 #'
+#' @seealso [iarimax()] for the modeling step that produces the input object,
+#'   [sden_test()] for group-level inference on the p-values,
+#'   [looping_machine()] which calls `i_pval()` internally.
+#'
 #' @examples
 #' \donttest{
 #' # Fit I-ARIMAX on a small synthetic panel

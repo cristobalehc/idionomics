@@ -113,3 +113,8 @@ loop_result <- looping_machine(panel,
 mean(loop_result$loop_df$Loop_positive_directed, na.rm = TRUE)
 }
 }
+\seealso{
+\code{\link[=iarimax]{iarimax()}} and \code{\link[=i_pval]{i_pval()}} which are called internally for each
+leg; \code{\link[=i_screener]{i_screener()}}, \code{\link[=pmstandardize]{pmstandardize()}}, \code{\link[=i_detrender]{i_detrender()}} for
+preprocessing.
+}

@@ -49,6 +49,10 @@
 #' @return A dataframe with new `<col>_dt` columns containing the
 #'   within-person linear-detrended residuals.
 #'
+#' @seealso [i_screener()] for upstream data quality screening,
+#'   [pmstandardize()] for within-person standardization, [iarimax()] for
+#'   per-subject modeling.
+#'
 #' @examples
 #' local({
 #' # Build a panel with a linear time trend embedded in x

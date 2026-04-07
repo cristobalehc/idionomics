@@ -69,3 +69,8 @@ summary(sden)
 sden_ent <- sden_test(result, test = "ENT")
 }
 }
+\seealso{
+\code{\link[=iarimax]{iarimax()}} for per-subject modeling, \code{\link[=i_pval]{i_pval()}} for per-subject
+p-values (must be applied before \code{sden_test()}),
+\code{\link[=summary.sden_results]{summary.sden_results()}} for printing results.
+}

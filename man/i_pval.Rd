@@ -45,3 +45,8 @@ result_pval <- i_pval(result)
 result_pval$results_df[, c("id", "estimate_x", "pval_x")]
 }
 }
+\seealso{
+\code{\link[=iarimax]{iarimax()}} for the modeling step that produces the input object,
+\code{\link[=sden_test]{sden_test()}} for group-level inference on the p-values,
+\code{\link[=looping_machine]{looping_machine()}} which calls \code{i_pval()} internally.
+}

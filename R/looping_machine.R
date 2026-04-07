@@ -54,6 +54,10 @@
 #'   \item{iarimax_a_to_b,iarimax_b_to_c,iarimax_c_to_a}{\code{iarimax_results} objects for each leg, with \code{i_pval} already applied.}
 #' }
 #'
+#' @seealso [iarimax()] and [i_pval()] which are called internally for each
+#'   leg; [i_screener()], [pmstandardize()], [i_detrender()] for
+#'   preprocessing.
+#'
 #' @examples
 #' \donttest{
 #' # Build a panel with three correlated processes

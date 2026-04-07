@@ -90,6 +90,9 @@
 #'   columns grouped by metric: all `<col>_n_valid`, then all `<col>_sd`, then
 #'   all `<col>_mode_pct`, then all `<col>_pass`, and finally `pass_overall`.
 #'
+#' @seealso [pmstandardize()] for the next pipeline step,
+#'   [i_detrender()] for linear detrending, [iarimax()] for per-subject modeling.
+#'
 #' @examples
 #' local({
 #' set.seed(42)

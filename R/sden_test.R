@@ -32,6 +32,10 @@
 #'   Attributes \code{focal_predictor}, \code{id_var}, and \code{timevar} are
 #'   inherited from the input \code{iarimax_object}.
 #'
+#' @seealso [iarimax()] for per-subject modeling, [i_pval()] for per-subject
+#'   p-values (must be applied before `sden_test()`),
+#'   [summary.sden_results()] for printing results.
+#'
 #' @examples
 #' \donttest{
 #' set.seed(1)

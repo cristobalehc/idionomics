@@ -33,3 +33,6 @@ result <- iarimax(panel, y_series = "y", x_series = "x",
 summary(result)
 }
 }
+\seealso{
+\code{\link[=iarimax]{iarimax()}}, \code{\link[=plot.iarimax_results]{plot.iarimax_results()}}, \code{\link[=i_pval]{i_pval()}}, \code{\link[=sden_test]{sden_test()}}
+}

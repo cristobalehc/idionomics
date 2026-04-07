@@ -77,13 +77,19 @@
 #' Stanton, C., Yap, K., Fraser, M. I., Gates, K., & Gloster, A. T. (2024).
 #' A Personalised Approach to Identifying Important Determinants of Well-being.
 #' *Cognitive Therapy and Research*, *48*(4), 1--22.
-#' \doi{10.1007/s10608-024-10486-w}
+#' \url{https://doi.org/10.1007/s10608-024-10486-w}
 #'
 #' Sahdra, B. K., Ciarrochi, J., Klimczak, K. S., Krafft, J., Hayes, S. C.,
 #' & Levin, M. (2024). Testing the applicability of idionomic statistics in
 #' longitudinal studies: The example of 'doing what matters.'
 #' *Journal of Contextual Behavioral Science*, *32*, 100728.
-#' \doi{10.1016/j.jcbs.2024.100728}
+#' \url{https://doi.org/10.1016/j.jcbs.2024.100728}
+#'
+#' @seealso [i_screener()], [pmstandardize()], [i_detrender()] for
+#'   preprocessing; [i_pval()] for per-subject p-values; [sden_test()] for
+#'   sign divergence / equisyncratic null tests; [looping_machine()] for
+#'   directed loop detection; [summary.iarimax_results()],
+#'   [plot.iarimax_results()] for S3 methods.
 #'
 #' @examples
 #' \donttest{
