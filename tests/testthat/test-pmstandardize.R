@@ -288,6 +288,64 @@ test_that("standardizing y does not alter x values and vice versa", {
   expect_equal(result$y, df$y)
 })
 
+# ── Inf / NaN in input ──────────────────────────────────────────────────────
+# Inf is rejected upfront with an informative error — it is corrupted data
+# that the user should fix, not a case to silently handle.
+
+test_that("Inf in input triggers an informative error", {
+  df <- data.frame(
+    id = rep(c("A", "B"), each = 5),
+    x  = c(1, 2, 3, 4, 5,
+           1, 2, Inf, 4, 5),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    pmstandardize(df, cols = "x", id_var = "id"),
+    regexp = "Inf"
+  )
+})
+
+test_that("-Inf in input triggers an informative error", {
+  df <- data.frame(
+    id = rep("A", 5),
+    x  = c(-Inf, 2, 3, 4, 5),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    pmstandardize(df, cols = "x", id_var = "id"),
+    regexp = "Inf"
+  )
+})
+
+test_that("Inf in one column is caught even when other columns are clean", {
+  df <- data.frame(
+    id = rep("A", 5),
+    x  = c(1, 2, 3, 4, 5),
+    y  = c(1, Inf, 3, 4, 5),
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    pmstandardize(df, cols = c("x", "y"), id_var = "id"),
+    regexp = "y"
+  )
+})
+
+test_that("NaN in input is treated like NA", {
+  df <- data.frame(
+    id = rep("A", 5),
+    x  = c(NaN, 2, 3, 4, 5),
+    stringsAsFactors = FALSE
+  )
+  result <- pmstandardize(df, cols = "x", id_var = "id")
+
+  # NaN position: is.na(NaN) is TRUE, so handled by na.rm = TRUE
+  expect_true(is.na(result$x_psd[1]))
+  # Remaining values should be valid z-scores
+  non_na <- result$x_psd[2:5]
+  expect_false(any(is.na(non_na)))
+  expect_equal(mean(non_na), 0, tolerance = 1e-10)
+})
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Verbose

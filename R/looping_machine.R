@@ -182,6 +182,18 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
     )
   }
 
+  # Guard: no Inf/-Inf values in series or covariates.
+  has_inf <- series_to_check[
+    vapply(dataframe[series_to_check], function(x) any(is.infinite(x), na.rm = TRUE), logical(1))
+  ]
+  if (length(has_inf) > 0) {
+    stop(
+      "Column(s) contain Inf or -Inf values: ",
+      paste(has_inf, collapse = ", "),
+      ". Remove or replace infinite values before calling looping_machine()."
+    )
+  }
+
   # Guard: timevar must be numeric.
   if (!is.numeric(dataframe[[timevar]])) {
     stop(

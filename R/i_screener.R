@@ -158,6 +158,16 @@ i_screener <- function(df, cols, id_var,
     )
   }
 
+  # Guard: no Inf/-Inf values in cols.
+  has_inf <- cols[vapply(df[cols], function(x) any(is.infinite(x), na.rm = TRUE), logical(1))]
+  if (length(has_inf) > 0) {
+    stop(
+      "Column(s) contain Inf or -Inf values: ",
+      paste(has_inf, collapse = ", "),
+      ". Remove or replace infinite values before calling i_screener()."
+    )
+  }
+
   # Validate threshold parameters.
   if (!is.numeric(min_n_subject) || length(min_n_subject) != 1 ||
       !is.finite(min_n_subject) || min_n_subject < 1) {

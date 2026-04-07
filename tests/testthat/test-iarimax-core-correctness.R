@@ -216,6 +216,51 @@ test_that("fixed_d = NULL allows varying nI across subjects", {
 # The true xreg coefficient in make_panel is 0.5. With enough subjects and
 # observations the REMA pooled estimate should recover it.
 
+# ── REMA independent verification ────────────────────────────────────────────
+# Verifies that the meta_analysis object stored by iarimax matches an
+# independent metafor::rma() call on the same data (beta, CI, tau2, I2).
+
+test_that("REMA beta matches independent metafor::rma() computation", {
+  result <- .get_result()
+  df     <- result$results_df
+  valid  <- !is.na(df[["estimate_x"]])
+
+  manual <- metafor::rma(yi = df[["estimate_x"]][valid],
+                         sei = df[["std.error_x"]][valid],
+                         method = "REML")
+
+  expect_equal(as.numeric(result$meta_analysis$beta),
+               as.numeric(manual$beta), tolerance = 1e-10)
+})
+
+test_that("REMA CI bounds match independent metafor::rma() computation", {
+  result <- .get_result()
+  df     <- result$results_df
+  valid  <- !is.na(df[["estimate_x"]])
+
+  manual <- metafor::rma(yi = df[["estimate_x"]][valid],
+                         sei = df[["std.error_x"]][valid],
+                         method = "REML")
+
+  expect_equal(result$meta_analysis$ci.lb, manual$ci.lb, tolerance = 1e-10)
+  expect_equal(result$meta_analysis$ci.ub, manual$ci.ub, tolerance = 1e-10)
+})
+
+test_that("REMA tau2 and I2 match independent metafor::rma() computation", {
+  result <- .get_result()
+  df     <- result$results_df
+  valid  <- !is.na(df[["estimate_x"]])
+
+  manual <- metafor::rma(yi = df[["estimate_x"]][valid],
+                         sei = df[["std.error_x"]][valid],
+                         method = "REML")
+
+  expect_equal(result$meta_analysis$tau2, manual$tau2, tolerance = 1e-10)
+  expect_equal(result$meta_analysis$I2,   manual$I2,   tolerance = 1e-8)
+})
+
+# ── Signal recovery ───────────────────────────────────────────────────────────
+
 test_that("REMA pooled estimate recovers the true effect (0.5) in a larger panel", {
   skip_on_cran()
   big_panel  <- make_panel(n_subjects = 10, n_obs = 35, seed = 42)

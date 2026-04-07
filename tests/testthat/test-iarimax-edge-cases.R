@@ -220,3 +220,121 @@ test_that("subject with some NA in y is still estimated via Kalman filter", {
   expect_false(is.na(row1$estimate_x))
   expect_true(row1$n_valid < 40)
 })
+
+
+# ── auto.arima failure path ──────────────────────────────────────────────────
+# Exercises the tryCatch at the auto.arima call: subject "collinear" has
+# x2 = x (perfectly collinear predictors).  Both columns individually pass
+# the variance filter but the rank-deficient xreg matrix causes auto.arima
+# to error.  The test verifies bookkeeping: the subject appears in
+# error_arimax_skipped with NA model stats, but retains a valid raw_cor
+# (computed before auto.arima), and the accounting identity holds.
+
+test_that("auto.arima failure: subject in error_arimax_skipped with NA stats and valid raw_cor", {
+  skip_on_cran()
+  base <- make_panel(n_subjects = 3, n_obs = 25)
+  base$x2 <- rnorm(nrow(base))
+
+  set.seed(99)
+  bad_x <- rnorm(25)
+  bad <- data.frame(id = "collinear", time = seq_len(25),
+                    x = bad_x, y = rnorm(25), x2 = bad_x,
+                    stringsAsFactors = FALSE)
+  panel <- rbind(base, bad)
+
+  res <- suppressMessages(
+    iarimax(panel, y_series = "y", x_series = c("x", "x2"),
+            focal_predictor = "x", id_var = "id", timevar = "time")
+  )
+
+  # Subject passed the filter, so it appears in results_df
+  expect_true("collinear" %in% res$results_df$id)
+
+  # Subject should be in error_arimax_skipped
+  expect_true("collinear" %in% res$case_number_detail$error_arimax_skipped)
+
+  # Model stats should all be NA
+  row <- res$results_df[res$results_df$id == "collinear", ]
+  expect_true(is.na(row$nAR))
+  expect_true(is.na(row$nI))
+  expect_true(is.na(row$nMA))
+  expect_true(is.na(row$n_valid))
+  expect_true(is.na(row$n_params))
+  expect_true(is.na(row$estimate_x))
+  expect_true(is.na(row$std.error_x))
+
+  # raw_cor is computed before auto.arima and should survive the failure
+  expect_false(is.na(row$raw_cor))
+
+  # Accounting identity must hold
+  cd <- res$case_number_detail
+  expect_equal(
+    cd$n_original_df,
+    cd$n_filtered_out + length(cd$error_arimax_skipped) + cd$n_used_iarimax
+  )
+
+  # n_used_iarimax excludes the failed subject
+  expect_equal(cd$n_used_iarimax, nrow(res$results_df) - length(cd$error_arimax_skipped))
+})
+
+
+# ── Inf values in y or x ────────────────────────────────────────────────────
+# Inf is rejected upfront with an informative error.
+# NaN (treated as NA by is.na) is handled normally by the variance filter.
+
+test_that("Inf in y triggers an informative error", {
+  base <- make_panel(n_subjects = 3, n_obs = 25)
+  inf_subj <- data.frame(id = "inf_y", time = seq_len(25),
+                         x = rnorm(25), y = c(rnorm(24), Inf),
+                         stringsAsFactors = FALSE)
+  panel <- rbind(base, inf_subj)
+
+  expect_error(
+    iarimax(panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time"),
+    regexp = "Inf"
+  )
+})
+
+test_that("Inf in x triggers an informative error", {
+  base <- make_panel(n_subjects = 3, n_obs = 25)
+  inf_subj <- data.frame(id = "inf_x", time = seq_len(25),
+                         x = c(rnorm(24), Inf), y = rnorm(25),
+                         stringsAsFactors = FALSE)
+  panel <- rbind(base, inf_subj)
+
+  expect_error(
+    iarimax(panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time"),
+    regexp = "Inf"
+  )
+})
+
+test_that("-Inf in y triggers an informative error", {
+  base <- make_panel(n_subjects = 3, n_obs = 25)
+  inf_subj <- data.frame(id = "neg_inf", time = seq_len(25),
+                         x = rnorm(25), y = c(-Inf, rnorm(24)),
+                         stringsAsFactors = FALSE)
+  panel <- rbind(base, inf_subj)
+
+  expect_error(
+    iarimax(panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time"),
+    regexp = "Inf"
+  )
+})
+
+test_that("NaN in y (not NA): treated as missing, filtered if too few remain", {
+  skip_on_cran()
+  base <- make_panel(n_subjects = 3, n_obs = 25)
+  # 15 NaN values → only 10 complete → below min_n_subject = 20
+  nan_subj <- data.frame(id = "nan_y", time = seq_len(25),
+                         x = rnorm(25), y = c(rep(NaN, 15), rnorm(10)),
+                         stringsAsFactors = FALSE)
+  panel <- rbind(base, nan_subj)
+
+  res <- iarimax(panel, y_series = "y", x_series = "x",
+                 id_var = "id", timevar = "time")
+
+  expect_false("nan_y" %in% res$results_df$id)
+})

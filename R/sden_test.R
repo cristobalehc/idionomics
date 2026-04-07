@@ -7,12 +7,15 @@
 #' @export
 #'
 #' @param iarimax_object Your iarimax object.
-#' @param alpha_arimax Critical value for per-subject ARIMAX coefficient significance. Defaults to 0.05.
-#'   In ENT mode this value serves double duty: it is both the threshold for counting a subject's
-#'   effect as significant (numerator) and the null probability for the binomial test (denominator).
-#'   Raising it simultaneously increases the count of significant effects and raises the null
-#'   expectation against which they are tested. Use \code{alpha_binom} to set the binomial null
-#'   probability independently if you need to decouple the two.
+#' @param alpha_arimax Significance threshold for classifying individual subjects'
+#'   ARIMAX coefficients as significant (\code{pval < alpha_arimax}).
+#'   Also used to derive the null probability for the binomial test:
+#'   \code{alpha_arimax} in ENT mode, \code{alpha_arimax / 2} in SDT mode
+#'   (unless overridden by \code{alpha_binom}). Defaults to 0.05.
+#'   In ENT mode this creates a double role: raising \code{alpha_arimax}
+#'   simultaneously increases the count of significant effects and raises the
+#'   null expectation against which they are tested. Use \code{alpha_binom} to
+#'   decouple the two.
 #' @param alpha_binom Null probability for the binomial test. Defaults to \code{alpha_arimax} for
 #'   ENT and \code{alpha_arimax / 2} for SDT. Supply this to override the default without changing
 #'   the per-subject significance threshold.
@@ -33,7 +36,7 @@
 #'   inherited from the input \code{iarimax_object}.
 #'
 #' @seealso [iarimax()] for per-subject modeling, [i_pval()] for per-subject
-#'   p-values (must be applied before `sden_test()`),
+#'   p-values (called internally by `sden_test()`),
 #'   [summary.sden_results()] for printing results.
 #'
 #' @examples

@@ -87,6 +87,16 @@ pmstandardize <- function(df, cols, id_var, verbose = FALSE, append = TRUE) {
     )
   }
 
+  # Guard: no Inf/-Inf values in cols (would silently corrupt z-scores).
+  has_inf <- cols[vapply(df[cols], function(x) any(is.infinite(x), na.rm = TRUE), logical(1))]
+  if (length(has_inf) > 0) {
+    stop(
+      "Column(s) contain Inf or -Inf values: ",
+      paste(has_inf, collapse = ", "),
+      ". Remove or replace infinite values before calling pmstandardize()."
+    )
+  }
+
   # Remove any pre-existing grouping to avoid silent override
   df <- dplyr::ungroup(df)
 

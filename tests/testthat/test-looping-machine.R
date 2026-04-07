@@ -677,6 +677,38 @@ test_that("n_dropped_by_join is positive and message emitted when a subject is a
   expect_true(any(grepl("dropped from loop_df", msgs)))
 })
 
+test_that("dropped subject is absent from loop_df and surviving subjects are intact", {
+  # Same setup as above: subject "5" has c = 0 (zero variance).
+  set.seed(42)
+  n_obs <- 25
+  base <- do.call(rbind, lapply(1:4, function(id) {
+    a  <- rnorm(n_obs); b <- 0.4 * a + rnorm(n_obs); cc <- 0.4 * b + rnorm(n_obs)
+    data.frame(id = as.character(id), time = seq_len(n_obs),
+               a = a, b = b, c = cc, stringsAsFactors = FALSE)
+  }))
+  extra <- data.frame(id = "5", time = seq_len(n_obs),
+                      a = rnorm(n_obs), b = rnorm(n_obs), c = rep(0, n_obs),
+                      stringsAsFactors = FALSE)
+  panel_drop <- rbind(base, extra)
+
+  r <- suppressMessages(
+    looping_machine(panel_drop, a_series = "a", b_series = "b",
+                    c_series = "c", id_var = "id", timevar = "time")
+  )
+
+  # Subject "5" must NOT be in loop_df
+  expect_false("5" %in% r$loop_df$id)
+
+  # Subject "5" SHOULD be in the a_to_b leg (it has valid a and b)
+  expect_true("5" %in% r$iarimax_a_to_b$results_df$id)
+
+  # Subject "5" should NOT be in legs that need c
+  expect_false("5" %in% r$iarimax_b_to_c$results_df$id)
+
+  # n_in_loop_df equals number of subjects that survived all three legs
+  expect_equal(r$loop_case_detail$n_in_loop_df, 4L)
+})
+
 test_that("n_dropped_by_join is 0 when all subjects survive all three legs", {
   r <- .get_mini()
   expect_equal(r$loop_case_detail$n_dropped_by_join, 0L)

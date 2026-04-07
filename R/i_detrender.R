@@ -129,6 +129,16 @@ i_detrender <- function(df, cols, id_var, timevar,
     )
   }
 
+  # Guard: no Inf/-Inf values in cols.
+  has_inf <- cols[vapply(df[cols], function(x) any(is.infinite(x), na.rm = TRUE), logical(1))]
+  if (length(has_inf) > 0) {
+    stop(
+      "Column(s) contain Inf or -Inf values: ",
+      paste(has_inf, collapse = ", "),
+      ". Remove or replace infinite values before calling i_detrender()."
+    )
+  }
+
   # timevar must be numeric for a meaningful linear trend
   if (!is.numeric(df[[timevar]])) {
     stop(

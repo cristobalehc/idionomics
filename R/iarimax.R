@@ -184,6 +184,19 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
     )
   }
 
+  # Guard: no Inf/-Inf values in y_series or x_series.
+  series_to_check <- c(y_series, x_series)
+  has_inf <- series_to_check[
+    vapply(dataframe[series_to_check], function(x) any(is.infinite(x), na.rm = TRUE), logical(1))
+  ]
+  if (length(has_inf) > 0) {
+    stop(
+      "Column(s) contain Inf or -Inf values: ",
+      paste(has_inf, collapse = ", "),
+      ". Remove or replace infinite values before calling iarimax()."
+    )
+  }
+
   # timevar must be numeric for correct temporal ordering
   if (!is.numeric(dataframe[[timevar]])) {
     stop(

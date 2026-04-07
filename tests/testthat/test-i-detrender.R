@@ -419,3 +419,47 @@ test_that("verbose message mentions detrend", {
   )
   expect_true(any(grepl("(?i)detrend", msgs, perl = TRUE)))
 })
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Inf / NaN in input
+# ══════════════════════════════════════════════════════════════════════════════
+# Inf is rejected upfront with an informative error.
+# NaN (which is.na treats as NA) is handled normally by na.rm / na.exclude.
+
+test_that("Inf in a column triggers an informative error", {
+  set.seed(10)
+  df <- rbind(
+    data.frame(id = "good",  time = seq_len(25), x = rnorm(25), stringsAsFactors = FALSE),
+    data.frame(id = "inf_x", time = seq_len(25), x = c(rnorm(24), Inf), stringsAsFactors = FALSE)
+  )
+  expect_error(
+    i_detrender(df, cols = "x", id_var = "id", timevar = "time"),
+    regexp = "Inf"
+  )
+})
+
+test_that("-Inf in a column triggers an informative error", {
+  df <- data.frame(id = "A", time = seq_len(25), x = c(-Inf, rnorm(24)),
+                   stringsAsFactors = FALSE)
+  expect_error(
+    i_detrender(df, cols = "x", id_var = "id", timevar = "time"),
+    regexp = "Inf"
+  )
+})
+
+test_that("NaN in a column is treated like NA (missing value)", {
+  set.seed(12)
+  df <- data.frame(
+    id   = rep("A", 25),
+    time = seq_len(25),
+    x    = c(NaN, rnorm(24)),
+    stringsAsFactors = FALSE
+  )
+  result <- i_detrender(df, cols = "x", id_var = "id", timevar = "time")
+
+  # NaN position should be NA in the output (na.exclude preserves position)
+  expect_true(is.na(result$x_dt[1]))
+  # Other positions should be valid residuals
+  expect_false(any(is.na(result$x_dt[2:25])))
+})
