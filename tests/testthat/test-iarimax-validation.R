@@ -45,6 +45,104 @@ test_that("error message includes 'Cannot find required variables'", {
   )
 })
 
+# ── Parameter type validation ────────────────────────────────────────────────
+
+test_that("numeric y_series triggers error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = 1, x_series = "x",
+            id_var = "id", timevar = "time"),
+    regexp = "y_series"
+  )
+})
+
+test_that("vector y_series triggers error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = c("y", "x"), x_series = "x",
+            id_var = "id", timevar = "time"),
+    regexp = "y_series"
+  )
+})
+
+test_that("numeric x_series triggers error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = 1,
+            id_var = "id", timevar = "time"),
+    regexp = "x_series"
+  )
+})
+
+test_that("empty x_series triggers error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = character(0),
+            id_var = "id", timevar = "time"),
+    regexp = "x_series"
+  )
+})
+
+test_that("numeric id_var triggers error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = 1, timevar = "time"),
+    regexp = "id_var"
+  )
+})
+
+test_that("vector id_var triggers error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = c("id", "id"), timevar = "time"),
+    regexp = "id_var"
+  )
+})
+
+test_that("numeric timevar triggers error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = 1),
+    regexp = "timevar"
+  )
+})
+
+test_that("vector timevar triggers error", {
+  expect_error(
+    iarimax(dataframe = panel, y_series = "y", x_series = "x",
+            id_var = "id", timevar = c("time", "time")),
+    regexp = "timevar"
+  )
+})
+
+# ── Non-numeric series columns ───────────────────────────────────────────────
+
+test_that("character y_series column triggers error naming the column", {
+  bad <- panel
+  bad$y <- as.character(bad$y)
+  expect_error(
+    iarimax(dataframe = bad, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time"),
+    regexp = "must be numeric"
+  )
+})
+
+test_that("character x_series column triggers error naming the column", {
+  bad <- panel
+  bad$x <- as.character(bad$x)
+  expect_error(
+    iarimax(dataframe = bad, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time"),
+    regexp = "must be numeric"
+  )
+})
+
+test_that("non-numeric series error reports the actual class", {
+  bad <- panel
+  bad$x <- as.character(bad$x)
+  expect_error(
+    iarimax(dataframe = bad, y_series = "y", x_series = "x",
+            id_var = "id", timevar = "time"),
+    regexp = "character"
+  )
+})
+
 # ── NA in timevar ─────────────────────────────────────────────────────────────
 
 test_that("single NA in timevar triggers error mentioning the count", {

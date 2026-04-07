@@ -95,6 +95,17 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
                             keep_models = FALSE,
                             verbose = FALSE) {
 
+  # Guard: series variables must be single character strings.
+  if (!is.character(a_series) || length(a_series) != 1) {
+    stop("'a_series' must be a single character string.")
+  }
+  if (!is.character(b_series) || length(b_series) != 1) {
+    stop("'b_series' must be a single character string.")
+  }
+  if (!is.character(c_series) || length(c_series) != 1) {
+    stop("'c_series' must be a single character string.")
+  }
+
   if (!is.numeric(min_n_subject) || length(min_n_subject) != 1 ||
       !is.finite(min_n_subject) || min_n_subject < 1) {
     stop("'min_n_subject' must be a finite positive number.")
@@ -155,6 +166,20 @@ looping_machine <- function(dataframe, a_series, b_series, c_series, id_var, tim
       "Cannot find required variables. Check if you spelled the following variables correctly:",
       paste(missing_vars, collapse = ", ")
     ))
+  }
+
+  # Guard: series columns must be numeric.
+  series_to_check <- c(a_series, b_series, c_series, covariates)
+  non_numeric <- series_to_check[
+    !vapply(dataframe[series_to_check], is.numeric, logical(1))
+  ]
+  if (length(non_numeric) > 0) {
+    stop(
+      "The following series columns must be numeric: ",
+      paste(non_numeric, collapse = ", "), ". Got class: ",
+      paste(vapply(dataframe[non_numeric], function(x) class(x)[1], character(1)), collapse = ", "),
+      "."
+    )
   }
 
   # Guard: timevar must be numeric.

@@ -125,6 +125,23 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
                     focal_predictor = NULL, id_var, timevar, fixed_d = NULL,
                     correlation_method = 'pearson', keep_models = FALSE, verbose = FALSE) {
 
+  # Guard: y_series must be a single character string.
+  if (!is.character(y_series) || length(y_series) != 1) {
+    stop("'y_series' must be a single character string.")
+  }
+  # Guard: x_series must be a non-empty character vector.
+  if (!is.character(x_series) || length(x_series) == 0) {
+    stop("'x_series' must be a non-empty character vector.")
+  }
+  # Guard: id_var must be a single character string.
+  if (!is.character(id_var) || length(id_var) != 1) {
+    stop("'id_var' must be a single character string.")
+  }
+  # Guard: timevar must be a single character string.
+  if (!is.character(timevar) || length(timevar) != 1) {
+    stop("'timevar' must be a single character string.")
+  }
+
   # Check whether variables are in the dataset.
   required_vars <- c(y_series, x_series, id_var, timevar)
 
@@ -152,6 +169,19 @@ iarimax <- function(dataframe, min_n_subject = 20, minvar = 0.01, y_series, x_se
   if (!all(required_vars %in% colnames(dataframe))) {
     missing_vars <- required_vars[!required_vars %in% colnames(dataframe)]
     stop(paste("Cannot find required variables. Check if you spelled the following variables correctly:", paste(missing_vars, collapse = ", ")))
+  }
+
+  # y_series and x_series must be numeric columns.
+  non_numeric <- c(y_series, x_series)[
+    !vapply(dataframe[c(y_series, x_series)], is.numeric, logical(1))
+  ]
+  if (length(non_numeric) > 0) {
+    stop(
+      "The following series columns must be numeric: ",
+      paste(non_numeric, collapse = ", "), ". Got class: ",
+      paste(vapply(dataframe[non_numeric], function(x) class(x)[1], character(1)), collapse = ", "),
+      "."
+    )
   }
 
   # timevar must be numeric for correct temporal ordering

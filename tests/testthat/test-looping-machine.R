@@ -159,6 +159,53 @@ test_that("misspelled timevar triggers informative error", {
   )
 })
 
+test_that("numeric a_series triggers error", {
+  panel <- make_tiny_loop_panel()
+  expect_error(
+    looping_machine(panel, a_series = 1, b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time"),
+    regexp = "a_series"
+  )
+})
+
+test_that("numeric b_series triggers error", {
+  panel <- make_tiny_loop_panel()
+  expect_error(
+    looping_machine(panel, a_series = "a", b_series = 1, c_series = "c",
+                    id_var = "id", timevar = "time"),
+    regexp = "b_series"
+  )
+})
+
+test_that("numeric c_series triggers error", {
+  panel <- make_tiny_loop_panel()
+  expect_error(
+    looping_machine(panel, a_series = "a", b_series = "b", c_series = 1,
+                    id_var = "id", timevar = "time"),
+    regexp = "c_series"
+  )
+})
+
+test_that("character series column triggers error naming the column", {
+  panel <- make_tiny_loop_panel()
+  panel$a <- as.character(panel$a)
+  expect_error(
+    looping_machine(panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time"),
+    regexp = "must be numeric"
+  )
+})
+
+test_that("non-numeric covariate column triggers error naming the column", {
+  panel <- make_tiny_loop_panel()
+  panel$cov1 <- rep("x", nrow(panel))
+  expect_error(
+    looping_machine(panel, a_series = "a", b_series = "b", c_series = "c",
+                    id_var = "id", timevar = "time", covariates = "cov1"),
+    regexp = "cov1"
+  )
+})
+
 test_that("min_n_subject = 0 triggers upfront error", {
   panel <- make_tiny_loop_panel()
   expect_error(

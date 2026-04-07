@@ -23,6 +23,11 @@
 #' }
 summary.iarimax_results <- function(object, alpha = 0.05, ...) {
 
+  if (!is.numeric(alpha) || length(alpha) != 1 || !is.finite(alpha) ||
+      alpha <= 0 || alpha >= 1) {
+    stop("'alpha' must be a single finite number in (0, 1).")
+  }
+
   focal  <- attr(object, "focal_predictor")
   id_var <- attr(object, "id_var")
   outcome <- attr(object, "outcome")
@@ -131,6 +136,14 @@ summary.iarimax_results <- function(object, alpha = 0.05, ...) {
 plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
                                  x_series_name = NULL, alpha_crit_t = 0.05,
                                  lims = c(-1, 1), ...) {
+
+  if (!is.numeric(alpha_crit_t) || length(alpha_crit_t) != 1 ||
+      !is.finite(alpha_crit_t) || alpha_crit_t <= 0 || alpha_crit_t >= 1) {
+    stop("'alpha_crit_t' must be a single finite number in (0, 1).")
+  }
+  if (!is.numeric(lims) || length(lims) != 2 || any(!is.finite(lims))) {
+    stop("'lims' must be a numeric vector of length 2 with finite values.")
+  }
 
   # Resolve feature: default to focal predictor attribute.
   if (is.null(feature)) {

@@ -200,7 +200,59 @@ test_that("summary.iarimax_results respects custom alpha argument", {
   expect_output(summary(r, alpha = 0.01), regexp = "0.01")
 })
 
+# ── summary.iarimax_results: alpha validation (Layer 1) ─────────────────────
+
+test_that("summary.iarimax_results errors on non-numeric alpha", {
+  r <- make_fake_iarimax()
+  expect_error(capture.output(summary(r, alpha = "x")), regexp = "alpha")
+})
+
+test_that("summary.iarimax_results errors on alpha = 0", {
+  r <- make_fake_iarimax()
+  expect_error(capture.output(summary(r, alpha = 0)), regexp = "alpha")
+})
+
+test_that("summary.iarimax_results errors on alpha = 1", {
+  r <- make_fake_iarimax()
+  expect_error(capture.output(summary(r, alpha = 1)), regexp = "alpha")
+})
+
+test_that("summary.iarimax_results errors on alpha = Inf", {
+  r <- make_fake_iarimax()
+  expect_error(capture.output(summary(r, alpha = Inf)), regexp = "alpha")
+})
+
 # ── plot.iarimax_results: guard clause (Layer 1) ──────────────────────────────
+
+test_that("plot.iarimax_results errors on non-numeric alpha_crit_t", {
+  r <- make_fake_iarimax()
+  expect_error(plot(r, alpha_crit_t = "x"), regexp = "alpha_crit_t")
+})
+
+test_that("plot.iarimax_results errors on alpha_crit_t = 0", {
+  r <- make_fake_iarimax()
+  expect_error(plot(r, alpha_crit_t = 0), regexp = "alpha_crit_t")
+})
+
+test_that("plot.iarimax_results errors on alpha_crit_t = 1", {
+  r <- make_fake_iarimax()
+  expect_error(plot(r, alpha_crit_t = 1), regexp = "alpha_crit_t")
+})
+
+test_that("plot.iarimax_results errors on non-numeric lims", {
+  r <- make_fake_iarimax()
+  expect_error(plot(r, lims = "bad"), regexp = "lims")
+})
+
+test_that("plot.iarimax_results errors on lims of wrong length", {
+  r <- make_fake_iarimax()
+  expect_error(plot(r, lims = c(-1, 0, 1)), regexp = "lims")
+})
+
+test_that("plot.iarimax_results errors on lims with Inf", {
+  r <- make_fake_iarimax()
+  expect_error(plot(r, lims = c(-Inf, 1)), regexp = "lims")
+})
 
 test_that("plot.iarimax_results errors on unknown feature naming the bad variable", {
   r <- make_fake_iarimax()

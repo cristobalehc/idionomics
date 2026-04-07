@@ -76,6 +76,17 @@ pmstandardize <- function(df, cols, id_var, verbose = FALSE, append = TRUE) {
     stop(paste("Cannot find required variables. Check if you spelled the following variables correctly:", paste(missing_vars, collapse = ", ")))
   }
 
+  # Guard: cols must be numeric columns.
+  non_numeric <- cols[!vapply(df[cols], is.numeric, logical(1))]
+  if (length(non_numeric) > 0) {
+    stop(
+      "The following columns must be numeric: ",
+      paste(non_numeric, collapse = ", "), ". Got class: ",
+      paste(vapply(df[non_numeric], function(x) class(x)[1], character(1)), collapse = ", "),
+      "."
+    )
+  }
+
   # Remove any pre-existing grouping to avoid silent override
   df <- dplyr::ungroup(df)
 

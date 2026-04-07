@@ -65,6 +65,33 @@ test_that("empty cols vector triggers error", {
   )
 })
 
+test_that("character column in cols triggers error naming the column", {
+  df <- make_pms_df()
+  df$x <- as.character(df$x)
+  expect_error(
+    pmstandardize(df, cols = "x", id_var = "id"),
+    regexp = "must be numeric"
+  )
+})
+
+test_that("non-numeric cols error reports the actual class", {
+  df <- make_pms_df()
+  df$x <- factor(df$x)
+  expect_error(
+    pmstandardize(df, cols = "x", id_var = "id"),
+    regexp = "factor"
+  )
+})
+
+test_that("mixed numeric and non-numeric cols triggers error only for non-numeric", {
+  df <- make_pms_df()
+  df$x <- as.character(df$x)
+  expect_error(
+    pmstandardize(df, cols = c("x", "y"), id_var = "id"),
+    regexp = "\\bx\\b"
+  )
+})
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Output structure

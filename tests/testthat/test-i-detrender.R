@@ -65,6 +65,24 @@ test_that("empty cols vector triggers error", {
   )
 })
 
+test_that("character column in cols triggers error naming the column", {
+  df <- make_det_df()
+  df$x <- as.character(df$x)
+  expect_error(
+    i_detrender(df, cols = "x", id_var = "id", timevar = "time"),
+    regexp = "must be numeric"
+  )
+})
+
+test_that("non-numeric cols error reports the actual class", {
+  df <- make_det_df()
+  df$x <- factor(df$x)
+  expect_error(
+    i_detrender(df, cols = "x", id_var = "id", timevar = "time"),
+    regexp = "factor"
+  )
+})
+
 test_that("id_var as a vector triggers error", {
   df <- make_det_df()
   expect_error(

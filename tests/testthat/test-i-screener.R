@@ -74,6 +74,24 @@ test_that("empty cols vector triggers error mentioning 'cols'", {
   )
 })
 
+test_that("character column in cols triggers error naming the column", {
+  df <- make_screen_df()
+  df$x <- as.character(df$x)
+  expect_error(
+    i_screener(df, cols = "x", id_var = "id"),
+    regexp = "must be numeric"
+  )
+})
+
+test_that("non-numeric cols error reports the actual class", {
+  df <- make_screen_df()
+  df$x <- factor(df$x)
+  expect_error(
+    i_screener(df, cols = "x", id_var = "id"),
+    regexp = "factor"
+  )
+})
+
 test_that("max_mode_pct = 0 triggers error", {
   df <- make_screen_df()
   expect_error(
