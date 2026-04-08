@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{summary.iarimax_results}
 \alias{summary.iarimax_results}
-\title{Summary method for iarimax_results objects.}
+\title{Summary method for iarimax_results objects, based on focal predictor.}
 \usage{
 \method{summary}{iarimax_results}(object, alpha = 0.05, ...)
 }
@@ -18,11 +18,11 @@ significant counts. Defaults to 0.05.}
 Invisibly returns \code{object}, called for its side effect of printing.
 }
 \description{
-Summary method for iarimax_results objects.
+Summary method for iarimax_results objects, based on focal predictor.
 }
 \examples{
 \donttest{
-set.seed(1)
+set.seed(42)
 panel <- do.call(rbind, lapply(1:6, function(id) {
   x <- rnorm(30)
   data.frame(id = as.character(id), time = seq_len(30),

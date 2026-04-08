@@ -27,7 +27,7 @@ internally.}
 
 \item{alpha_crit_t}{Critical value for per-subject significance coloring. Defaults to 0.05.}
 
-\item{lims}{Numeric vector of length 2 setting the effect size axis limits. Defaults to \code{c(-1, 1)}.}
+\item{lims}{Numeric vector of length 2 setting the effect size axis limits. Defaults to \code{c(-1, 1)} given current person mean standardization pipeline.}
 
 \item{...}{Additional arguments (ignored).}
 }
@@ -40,7 +40,7 @@ Caterpillar plot method for iarimax_results objects.
 }
 \examples{
 \donttest{
-set.seed(1)
+set.seed(42)
 panel <- do.call(rbind, lapply(1:6, function(id) {
   x <- rnorm(30)
   data.frame(id = as.character(id), time = seq_len(30),
