@@ -166,7 +166,6 @@ plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
   se_sym     <- rlang::sym(se_col)
 
   # Drop subjects with NA estimates (failed auto.arima fits) so that
-
   # fct_reorder and ggplot receive only plottable rows.
   df_plt <- x$results_df |>
     dplyr::filter(!is.na(!!est_sym)) |>

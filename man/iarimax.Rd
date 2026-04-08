@@ -141,6 +141,14 @@ Sahdra, B. K., Ciarrochi, J., Klimczak, K. S., Krafft, J., Hayes, S. C.,
 longitudinal studies: The example of 'doing what matters.'
 \emph{Journal of Contextual Behavioral Science}, \emph{32}, 100728.
 \url{https://doi.org/10.1016/j.jcbs.2024.100728}
+
+Hyndman, R. J., & Khandakar, Y. (2008). Automatic time series forecasting:
+the forecast package for R. \emph{Journal of Statistical Software}, \emph{27}(3), 1--22.
+\url{https://doi.org/10.18637/jss.v027.i03}
+
+Viechtbauer, W. (2010). Conducting meta-analyses in R with the metafor
+package. \emph{Journal of Statistical Software}, \emph{36}(3), 1--48.
+\url{https://doi.org/10.18637/jss.v036.i03}
 }
 \seealso{
 \code{\link[=i_screener]{i_screener()}}, \code{\link[=pmstandardize]{pmstandardize()}}, \code{\link[=i_detrender]{i_detrender()}} for
