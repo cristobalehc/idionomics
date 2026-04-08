@@ -1,5 +1,5 @@
 Package: idionomics
-Title: Conduct Idiographic-Nomothetic Analyses for Psychological Science
+Title: Conduct Idionomic Analyses for Time Series Modeling
 Version: 0.1.0
 Authors@R: 
    c(
@@ -7,19 +7,21 @@ Authors@R:
     person("Joseph", "Ciarrochi", email = "ciarrochij@gmail.com", role = "aut"),
     person("Steven", "Hayes", email = "stevenchayes@gmail.com", role = "aut"),
     person("Baljinder", "Sahdra", email = "baljinder.sahdra@acu.edu.au", role = "aut"))
-Description: A toolkit for idionomic science, a research philosophy that places the
-    individual at the center of analysis. Rather than fitting a single model to the
-    group and treating between-person averages as the primary finding, idionomic
-    methods model each person's time series independently and then aggregate upward
-    using random-effects meta-analysis that explicitly represents and quantifies
-    between-person heterogeneity. The package targets intensive longitudinal data
-    such as experience-sampling, ecological momentary assessment, and daily diary
-    designs. It provides a complete pipeline: data quality screening
-    ('i_screener()'), within-person standardization ('pmstandardize()'), linear
-    detrending ('i_detrender()'), per-subject ARIMAX modeling and meta-analysis
-    ('iarimax()'), individual p-values ('i_pval()'), Sign Divergence and
-    Equisyncratic Null tests ('sden_test()'), and directed loop detection
-    ('looping_machine()').
+Description: A toolkit for idionomic science, a research philosophy that places
+    the unit of the ensemble (individual/couple/group) at the center of analysis.
+    Rather than assuming a common distribution, a similar enough process for each
+    unit, and fitting a single model to the whole ensemble, idionomic methods model
+    each unit separately, then aggregate upward if sensible. The group-level picture
+    emerges from individual results, not the other way around, while explicitly
+    evaluating whether aggregation is reasonable given the measured level of
+    heterogeneity of effects. The package is built around intensive longitudinal
+    data where each participant contributes a time series. It provides a pipeline
+    from preprocessing through modeling to group-level summaries. Current functions:
+    data quality screening ('i_screener()'), within-person standardization
+    ('pmstandardize()'), linear detrending ('i_detrender()'), per-subject ARIMAX
+    modeling and meta-analysis ('iarimax()'), individual p-values ('i_pval()'),
+    Sign Divergence and Equisyncratic Null tests ('sden_test()'), and directed
+    loop detection ('looping_machine()').
 URL: https://github.com/cristobalehc/idionomics
 BugReports: https://github.com/cristobalehc/idionomics/issues
 Depends: R (>= 4.1.0)

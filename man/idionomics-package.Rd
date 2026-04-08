@@ -4,14 +4,26 @@
 \name{idionomics-package}
 \alias{idionomics}
 \alias{idionomics-package}
-\title{idionomics: Conduct Idiographic-Nomothetic Analyses for Psychological Science}
+\title{idionomics: Conduct Idionomic Analyses for Time Series Modeling}
 \description{
-A toolkit for idionomic science, a research philosophy that places the individual at the center of analysis. Rather than fitting a single model to the group and treating between-person averages as the primary finding, idionomic methods model each person's time series independently and then aggregate upward using random-effects meta-analysis that explicitly represents and quantifies between-person heterogeneity. The package targets intensive longitudinal data such as experience-sampling, ecological momentary assessment, and daily diary designs. It provides a complete pipeline: data quality screening ('i_screener()'), within-person standardization ('pmstandardize()'), linear detrending ('i_detrender()'), per-subject ARIMAX modeling and meta-analysis ('iarimax()'), individual p-values ('i_pval()'), Sign Divergence and Equisyncratic Null tests ('sden_test()'), and directed loop detection ('looping_machine()').
+A toolkit for idionomic science, a research philosophy that places the unit of the ensemble (individual/couple/group) at the center of analysis. Rather than assuming a common distribution, a similar enough process for each unit, and fitting a single model to the whole ensemble, idionomic methods model each unit separately, then aggregate upward if sensible. The group-level picture emerges from individual results, not the other way around, while explicitly evaluating whether aggregation is reasonable given the measured level of heterogeneity of effects. The package is built around intensive longitudinal data where each participant contributes a time series. It provides a pipeline from preprocessing through modeling to group-level summaries. Current functions: data quality screening ('i_screener()'), within-person standardization ('pmstandardize()'), linear detrending ('i_detrender()'), per-subject ARIMAX modeling and meta-analysis ('iarimax()'), individual p-values ('i_pval()'), Sign Divergence and Equisyncratic Null tests ('sden_test()'), and directed loop detection ('looping_machine()').
 }
 \references{
 Hernandez, C., Sahdra, B. K., Ciarrochi, J., & Hayes, S. C. (2024).
 Idionomic Assessment of Mindfulness. \emph{Handbook of Assessment in Mindfulness
 Research}, 1--27. \url{https://doi.org/10.1007/978-3-030-77644-2_136-1}
+
+Ciarrochi, J., Sahdra, B., Hayes, S. C., Hofmann, S. G., Sanford, B.,
+Stanton, C., Yap, K., Fraser, M. I., Gates, K., & Gloster, A. T. (2024).
+A Personalised Approach to Identifying Important Determinants of Well-being.
+\emph{Cognitive Therapy and Research}, \emph{48}(4), 1--22.
+\url{https://doi.org/10.1007/s10608-024-10486-w}
+
+Sahdra, B. K., Ciarrochi, J., Klimczak, K. S., Krafft, J., Hayes, S. C.,
+& Levin, M. (2024). Testing the applicability of idionomic statistics in
+longitudinal studies: The example of 'doing what matters.'
+\emph{Journal of Contextual Behavioral Science}, \emph{32}, 100728.
+\url{https://doi.org/10.1016/j.jcbs.2024.100728}
 }
 \seealso{
 Useful links:

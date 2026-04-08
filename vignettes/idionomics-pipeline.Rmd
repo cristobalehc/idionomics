@@ -1,8 +1,8 @@
 ---
-title: "The idionomics Pipeline: Individual-First Time-Series Analysis"
+title: "The idionomics Pipeline: keeping individual level information to find functionally relevant principles"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{The idionomics Pipeline: Individual-First Time-Series Analysis}
+  %\VignetteIndexEntry{The idionomics Pipeline: keeping individual level information to find functionally relevant principles}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -129,7 +129,7 @@ Edge cases are handled automatically: all-NA series remain NA; single-observatio
 
 ## Step 3: Linear detrending — `i_detrender()`
 
-`i_detrender()` removes the within-person linear time trend via `lm(col ~ time)` and appends each column with the residuals (`<col>_dt`). This reduces the integration order `auto.arima()` selects, keeping models parsimonious.
+`i_detrender()` removes the within-person linear time trend via `lm(col ~ time)` and appends each column with the residuals (`<col>_dt`). This reduces the integration order `auto.arima()` selects, fostering comparability between models.
 
 Filtering is per-column and independent: a subject can produce valid detrended residuals for one variable while receiving `NA` in another if that column fails the variance or observation-count thresholds.
 
@@ -154,6 +154,14 @@ result <- iarimax(panel_dt,
                   id_var    = "id",
                   timevar   = "time",
                   verbose   = TRUE)
+```
+
+By default, `auto.arima()` selects the differencing order `d` independently per subject. When `d` varies across subjects, some coefficients describe effects on levels (`d = 0`) while others describe effects on changes (`d = 1`), making them less comparable in the meta-analysis. Use `fixed_d` to impose a common differencing order:
+
+```{r iarimax-fixed-d, eval = FALSE}
+# Fix d = 0 for all subjects (coefficients describe effects on levels)
+result_d0 <- iarimax(panel_dt, y_series = "y_psd_dt", x_series = "a_psd_dt",
+                     id_var = "id", timevar = "time", fixed_d = 0)
 ```
 
 ### Summary

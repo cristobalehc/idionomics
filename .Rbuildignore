@@ -3,7 +3,6 @@
 ^\.Rproj\.user$
 ^CLAUDE\.md$
 ^\.claude$
-^review_notes\.md$
 ^LICENSE\.md$
 ^cran-comments\.md$
 ^doc$
