@@ -1,6 +1,5 @@
 # idionomics
 
-[![CRAN status](https://www.r-pkg.org/badges/version/idionomics)](https://CRAN.R-project.org/package=idionomics)
 [![R-hub](https://github.com/cristobalehc/idionomics/actions/workflows/rhub.yaml/badge.svg)](https://github.com/cristobalehc/idionomics/actions/workflows/rhub.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
