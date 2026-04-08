@@ -103,7 +103,8 @@ s10 <- data.frame(id = "10", time = seq_len(50),
                   y = rnorm(50), stringsAsFactors = FALSE)
 
 # Subject 11: full positive loop (a -> b -> c -> a)
-a11 <- rnorm(50); b11 <- 0.6 * a11 + rnorm(50, sd = 0.5)
+a11 <- rnorm(50)
+b11 <- 0.6 * a11 + rnorm(50, sd = 0.5)
 c11 <- 0.6 * b11 + rnorm(50, sd = 0.5)
 s11 <- data.frame(id = "11", time = seq_len(50),
                   a = a11 + 0.4 * c11, b = b11, c = c11,
@@ -290,11 +291,12 @@ panel <- do.call(rbind, lapply(1:9, function(id) {
   )
 }))
 
-# Special subjects
+# Manually created subjects.
 s10 <- data.frame(id = "10", time = seq_len(50),
                   a = rep(3, 50), b = rnorm(50), c = rnorm(50),
                   y = rnorm(50), stringsAsFactors = FALSE)
-a11 <- rnorm(50); b11 <- 0.6 * a11 + rnorm(50, sd = 0.5)
+a11 <- rnorm(50)
+b11 <- 0.6 * a11 + rnorm(50, sd = 0.5)
 c11 <- 0.6 * b11 + rnorm(50, sd = 0.5)
 s11 <- data.frame(id = "11", time = seq_len(50),
                   a = a11 + 0.4 * c11, b = b11, c = c11,
