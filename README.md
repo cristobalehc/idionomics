@@ -1,5 +1,7 @@
 # idionomics
 
+[![R-hub](https://github.com/cristobalehc/idionomics/actions/workflows/rhub.yaml/badge.svg)](https://github.com/cristobalehc/idionomics/actions/workflows/rhub.yaml)
+
 **idionomics** is an R toolkit for **idionomic science** — a research philosophy that places the individual at the center of analysis. Rather than fitting a single model to the group and treating between-person averages as the primary finding, idionomic methods model each person separately, then aggregate upward. The group-level picture emerges from individual results, not the other way around.
 
 The package is built around intensive longitudinal data: experience-sampling, ecological momentary assessment, daily diary, wearable sensor streams, and similar designs where each participant contributes a time series. It provides a pipeline from preprocessing through modeling to group-level summaries.
