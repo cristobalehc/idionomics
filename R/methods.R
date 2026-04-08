@@ -1,4 +1,4 @@
-#' Summary method for iarimax_results objects.
+#' Summary method for iarimax_results objects, based on focal predictor.
 #'
 #' @param object An object of class \code{iarimax_results}.
 #' @param alpha Significance threshold used for per-subject positive/negative
@@ -11,7 +11,7 @@
 #' @seealso [iarimax()], [plot.iarimax_results()], [i_pval()], [sden_test()]
 #' @examples
 #' \donttest{
-#' set.seed(1)
+#' set.seed(42)
 #' panel <- do.call(rbind, lapply(1:6, function(id) {
 #'   x <- rnorm(30)
 #'   data.frame(id = as.character(id), time = seq_len(30),
@@ -23,15 +23,18 @@
 #' }
 summary.iarimax_results <- function(object, alpha = 0.05, ...) {
 
+  #guard.
   if (!is.numeric(alpha) || length(alpha) != 1 || !is.finite(alpha) ||
       alpha <= 0 || alpha >= 1) {
     stop("'alpha' must be a single finite number in (0, 1).")
   }
 
+  #extract names.
   focal  <- attr(object, "focal_predictor")
   id_var <- attr(object, "id_var")
   outcome <- attr(object, "outcome")
 
+  #extract n's
   n_original <- object$case_number_detail$n_original_df
   n_included <- object$case_number_detail$n_used_iarimax
   n_filtered <- object$case_number_detail$n_filtered_out
@@ -60,11 +63,11 @@ summary.iarimax_results <- function(object, alpha = 0.05, ...) {
   cat("     ID variable      :", id_var, "\n\n")
 
   # -- Subjects --
-  cat("   Subjects:\n")
-  cat("     Original Dataframe          :", n_original, "\n")
-  cat("     Excl first filter (var or n):", n_filtered, "\n")
-  cat("     Skipped (auto.arima failed) :", n_skipped, "\n")
-  cat("     Analyzed cases              :", n_included, "\n\n")
+  cat("   Number of subjects:\n")
+  cat("     Original Dataframe (iarimax input):", n_original, "\n")
+  cat("     Excl. first filter (var or n).    :", n_filtered, "\n")
+  cat("     Skipped (auto.arima failed)       :", n_skipped, "\n")
+  cat("     Analyzed cases                    :", n_included, "\n\n")
 
 
   # -- Per-subject effects --
@@ -114,7 +117,7 @@ summary.iarimax_results <- function(object, alpha = 0.05, ...) {
 #' @param y_series_name Optional: substantive name for the outcome variable, used in the plot title.
 #' @param x_series_name Optional: substantive name for the predictor variable, used in the plot title.
 #' @param alpha_crit_t Critical value for per-subject significance coloring. Defaults to 0.05.
-#' @param lims Numeric vector of length 2 setting the effect size axis limits. Defaults to \code{c(-1, 1)}.
+#' @param lims Numeric vector of length 2 setting the effect size axis limits. Defaults to \code{c(-1, 1)} given current person mean standardization pipeline.
 #' @param ... Additional arguments (ignored).
 #' @return A ggplot2 object. Subjects with \code{NA} estimates (e.g., from
 #'   failed \code{auto.arima} fits) are silently excluded from the plot.
@@ -123,7 +126,7 @@ summary.iarimax_results <- function(object, alpha = 0.05, ...) {
 #' @seealso [iarimax()], [summary.iarimax_results()], [i_pval()]
 #' @examples
 #' \donttest{
-#' set.seed(1)
+#' set.seed(42)
 #' panel <- do.call(rbind, lapply(1:6, function(id) {
 #'   x <- rnorm(30)
 #'   data.frame(id = as.character(id), time = seq_len(30),
@@ -174,8 +177,9 @@ plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
       crit_val = stats::qt(1 - (alpha_crit_t / 2), df_mod),
       !!id_var_sym := forcats::fct_reorder(as.factor(!!id_var_sym), !!est_sym),
       line_color = dplyr::case_when(
-        !!est_sym - crit_val * !!se_sym > 0 ~ "green",
-        !!est_sym + crit_val * !!se_sym < 0 ~ "red",
+        #Calculate CI's (based on crit_val)
+        (!!est_sym - (crit_val * !!se_sym)) > 0 ~ "green",
+        (!!est_sym + (crit_val * !!se_sym)) < 0 ~ "red",
         TRUE ~ "black"
       )
     )
@@ -190,8 +194,8 @@ plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
     ggplot2::geom_point() +
     ggplot2::geom_linerange(
       ggplot2::aes(
-        ymin  = !!est_sym - crit_val * !!se_sym,
-        ymax  = !!est_sym + crit_val * !!se_sym,
+        ymin  = !!est_sym - (crit_val * !!se_sym),
+        ymax  = !!est_sym + (crit_val * !!se_sym),
         color = line_color
       )
     ) +
@@ -243,7 +247,7 @@ plot.iarimax_results <- function(x, feature = NULL, y_series_name = NULL,
 #' @seealso [sden_test()], [iarimax()], [i_pval()]
 #' @examples
 #' \donttest{
-#' set.seed(1)
+#' set.seed(42)
 #' panel <- do.call(rbind, lapply(1:6, function(id) {
 #'   x <- rnorm(30)
 #'   data.frame(id = as.character(id), time = seq_len(30),
@@ -301,13 +305,13 @@ summary.sden_results <- function(object, ...) {
   # -- Hypothesis --
   cat("\n")
   if (tt == "ENT") {
-    cat("   Testing whether the number of all significant effects (both sides)\n",
+    cat("   Testing whether the proportion of all significant effects (both sides)\n",
         "   is greater than", p$pnull, "\n")
   } else if (tt == "SDT counter-positive") {
-    cat("   Testing whether the number of negative significant effects\n",
+    cat("   Testing whether the proportion of negative significant effects\n",
         "   is greater than", p$pnull, "\n")
   } else {
-    cat("   Testing whether the number of positive significant effects\n",
+    cat("   Testing whether the proportion of positive significant effects\n",
         "   is greater than", p$pnull, "\n")
   }
 
