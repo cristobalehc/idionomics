@@ -34,7 +34,7 @@ For each subject, and each column:
 \item All values \code{NA}: returns \code{NA}.
 \item Fewer than 2 non-\code{NA} values: returns \code{0} (SD undefined; treated as
 zero deviation).
-\item Within-person SD ≈ 0 (constant series): returns \code{0}.
+\item Within-person SD near 0 (constant series): returns \code{0}.
 \item Otherwise: returns \code{(x - mean(x)) / sd(x)}, computed with \code{na.rm = TRUE}.
 }
 

@@ -19,7 +19,7 @@
 #' - All values `NA`: returns `NA`.
 #' - Fewer than 2 non-`NA` values: returns `0` (SD undefined; treated as
 #'   zero deviation).
-#' - Within-person SD ≈ 0 (constant series): returns `0`.
+#' - Within-person SD near 0 (constant series): returns `0`.
 #' - Otherwise: returns `(x - mean(x)) / sd(x)`, computed with `na.rm = TRUE`.
 #'
 #' Zero-variance subjects are retained as all-zero rows rather than dropped.

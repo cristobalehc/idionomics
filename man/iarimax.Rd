@@ -134,21 +134,21 @@ Ciarrochi, J., Sahdra, B., Hayes, S. C., Hofmann, S. G., Sanford, B.,
 Stanton, C., Yap, K., Fraser, M. I., Gates, K., & Gloster, A. T. (2024).
 A Personalised Approach to Identifying Important Determinants of Well-being.
 \emph{Cognitive Therapy and Research}, \emph{48}(4), 1--22.
-\url{https://doi.org/10.1007/s10608-024-10486-w}
+\doi{10.1007/s10608-024-10486-w}
 
 Sahdra, B. K., Ciarrochi, J., Klimczak, K. S., Krafft, J., Hayes, S. C.,
 & Levin, M. (2024). Testing the applicability of idionomic statistics in
 longitudinal studies: The example of 'doing what matters.'
 \emph{Journal of Contextual Behavioral Science}, \emph{32}, 100728.
-\url{https://doi.org/10.1016/j.jcbs.2024.100728}
+\doi{10.1016/j.jcbs.2024.100728}
 
 Hyndman, R. J., & Khandakar, Y. (2008). Automatic time series forecasting:
 the forecast package for R. \emph{Journal of Statistical Software}, \emph{27}(3), 1--22.
-\url{https://doi.org/10.18637/jss.v027.i03}
+\doi{10.18637/jss.v027.i03}
 
 Viechtbauer, W. (2010). Conducting meta-analyses in R with the metafor
 package. \emph{Journal of Statistical Software}, \emph{36}(3), 1--48.
-\url{https://doi.org/10.18637/jss.v036.i03}
+\doi{10.18637/jss.v036.i03}
 }
 \seealso{
 \code{\link[=i_screener]{i_screener()}}, \code{\link[=pmstandardize]{pmstandardize()}}, \code{\link[=i_detrender]{i_detrender()}} for
