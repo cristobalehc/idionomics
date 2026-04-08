@@ -1,6 +1,8 @@
 # idionomics
 
+[![CRAN status](https://www.r-pkg.org/badges/version/idionomics)](https://CRAN.R-project.org/package=idionomics)
 [![R-hub](https://github.com/cristobalehc/idionomics/actions/workflows/rhub.yaml/badge.svg)](https://github.com/cristobalehc/idionomics/actions/workflows/rhub.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 **idionomics** is an R toolkit for **idionomic science** — a research philosophy that places the individual at the center of analysis. Rather than fitting a single model to the group and treating between-person averages as the primary finding, idionomic methods model each person separately, then aggregate upward. The group-level picture emerges from individual results, not the other way around.
 
