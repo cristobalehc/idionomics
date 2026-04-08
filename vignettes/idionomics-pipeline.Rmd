@@ -11,61 +11,88 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment  = "#>",
-  message  = FALSE,
+  message  = TRUE,
   warning  = FALSE
 )
 ```
 
-## The idionomic principle
+## The idionomic science principle
 
-Classical panel methods (multilevel models, fixed-effects regression) estimate one set of parameters shared across all subjects. This is only sensible under strong assumptions such as ergodicity and exchangeability. When those assumptions fail — and they often do in psychological and behavioral data — group averages may obscure substantial individual differences: a positive average effect can coexist with a meaningful subset of individuals for whom the effect is negative, zero, or nonsignificant.
+Classical longitudinal methods (e.g., multilevel models) estimate one set of parameters shared — or partially shared — across all units of an ensemble. If the focus of interest is the trajectory of individuals, this is only sensible under hard-to-meet assumptions, such as exchangeability and/or ergodicity. If these assumptions are not met, ensemble averages may systematically obscure individual differences: an average positive effect may coexist with a significant subset of individuals for whom the effect is negative, nonsignificant, or zero.
 
-**idionomics** inverts the order of operations:
+Idionomic science inverts the order of operations:
 
-1. **Individual first.** Fit a model to each person's time series independently, capturing that person's unique dynamics and effect sizes.
-2. **Group later.** Aggregate individual estimates using random-effects meta-analysis, which explicitly represents and quantifies between-person heterogeneity.
+1. **Unit first.** Fit a model to each person's time series independently, capturing that person's unique dynamics, residual structure, and effect sizes.
+2. **Group later.** Aggregate the individual estimates with meta-analytic methods that explicitly represent and quantify heterogeneity across people.
 
 The recommended pipeline is:
 
 ```
-i_screener()  →  pmstandardize()  →  i_detrender()  →  iarimax()  →  i_pval() / sden_test()
+i_screener()  →  pmstandardize()  →  i_detrender()  →  iarimax()/looping_machine()  →  i_pval() / sden_test()
 ```
 
-This vignette walks through each step with a synthetic panel of 6 subjects, each contributing 30 time points.
+---
+
+## Synthetic data
+
+This vignette walks through each step with a synthetic panel of 12 subjects, each contributing 50 time points. The data includes four variables (`a`, `b`, `c`, `y`) with known relationships, plus three manually created subjects that demonstrate specific pipeline behaviors.
 
 ```{r load}
 library(idionomics)
 
 set.seed(42)
-panel <- do.call(rbind, lapply(1:6, function(id) {
-  x <- rnorm(30)
-  data.frame(
-    id   = as.character(id),
-    time = seq_len(30),
-    x    = x,
-    y    = 0.4 * x + rnorm(30),
-    stringsAsFactors = FALSE
-  )
+panel <- do.call(rbind, lapply(1:9, function(id) {
+  a <- rnorm(50)
+  b <- 0.4 * a + rnorm(50)
+  c <- 0.4 * b + rnorm(50)
+  data.frame(id = as.character(id), time = seq_len(50),
+             a = a, b = b, c = c,
+             y = 0.5 * a + rnorm(50),
+             stringsAsFactors = FALSE)
 }))
+
+# Subject 10: near-constant "a" — will be caught by i_screener(min_sd = 0.5)
+s10 <- data.frame(id = "10", time = seq_len(50),
+                  a = rep(3, 50), b = rnorm(50), c = rnorm(50),
+                  y = rnorm(50), stringsAsFactors = FALSE)
+
+# Subject 11: full positive loop (a -> b -> c -> a)
+a11 <- rnorm(50)
+b11 <- 0.6 * a11 + rnorm(50, sd = 0.5)
+c11 <- 0.6 * b11 + rnorm(50, sd = 0.5)
+s11 <- data.frame(id = "11", time = seq_len(50),
+                  a = a11 + 0.4 * c11, b = b11, c = c11,
+                  y = 0.5 * a11 + rnorm(50), stringsAsFactors = FALSE)
+
+# Subject 12: negative a -> y effect
+a12 <- rnorm(50)
+s12 <- data.frame(id = "12", time = seq_len(50),
+                  a = a12, b = 0.4 * a12 + rnorm(50),
+                  c = rnorm(50), y = -0.5 * a12 + rnorm(50),
+                  stringsAsFactors = FALSE)
+
+panel <- rbind(panel, s10, s11, s12)
 ```
 
-The true within-person effect of `x` on `y` is 0.4 for all subjects in this example.
+The data-generating process:
+
+- Subjects 1--9: `a` is independent noise, `b = 0.4*a + noise`, `c = 0.4*b + noise`, `y = 0.5*a + noise`. The chain `a -> b -> c` provides signal for `looping_machine()`, and `a -> y` provides signal for `iarimax()`. The `c -> a` leg has no true signal — the loop should not close for most subjects.
+- Subject 10: `a` is constant (`rep(3, 50)`), so it has zero within-person variance. `i_screener()` will catch this.
+- Subject 11: all three loop legs have true positive signal, including `c -> a`. This subject should show a positive directed loop.
+- Subject 12: the `a -> y` effect is negative (`-0.5`), creating heterogeneity in the meta-analysis.
 
 ---
 
 ## Step 1: Data quality screening — `i_screener()`
 
-Before standardizing, screen subjects on their raw data. After `pmstandardize()`, all non-constant series have within-person variance ≈ 1 by construction, making variance-based filters ineffective. `i_screener()` catches low-quality subjects at the right stage.
+Before standardizing, screen subjects on their raw data. After `pmstandardize()`, all non-constant series have within-person variance = 1 by construction, making variance-based filters ineffective. `i_screener()` catches low-quality subjects at the right stage.
 
 ```{r screener}
-panel_clean <- i_screener(
-  panel,
-  cols    = c("x", "y"),
-  id_var   = "id",
-  min_sd  = 0.3,
-  verbose = TRUE
-)
+panel_clean <- i_screener(panel, cols = c("a", "b", "c", "y"), id_var = "id",
+                          min_n_subject = 20, min_sd = 0.5, verbose = TRUE)
 ```
+
+Subject 10 is removed because `a` has SD = 0, which falls below `min_sd = 0.5`.
 
 Three criteria are available (all optional except `min_n_subject`):
 
@@ -73,13 +100,14 @@ Three criteria are available (all optional except `min_n_subject`):
 |---|---|
 | `min_n_subject` | Too few observations |
 | `min_sd` | Near-constant series (floor/ceiling responders) |
-| `max_mode_pct` | "Stuck" responders (e.g. ≥ 80% of responses identical) |
+| `max_mode_pct` | "Stuck" responders (e.g. >= 80% of responses identical) |
 
 Use `mode = "report"` to inspect quality metrics without committing to exclusion:
 
 ```{r screener-report}
-report <- i_screener(panel, cols = c("x", "y"), id_var = "id",
-                     min_sd = 0.3, mode = "report")
+report <- i_screener(panel, cols = c("a", "b", "c", "y"), id_var = "id",
+                     min_n_subject = 20, min_sd = 0.5, max_mode_pct = 0.80,
+                     mode = "report", verbose = TRUE)
 print(report)
 ```
 
@@ -90,8 +118,9 @@ print(report)
 Person-mean standardization computes `(x - person_mean) / person_sd` for each subject and column. This removes between-person differences in level and scale, making coefficients comparable across subjects. Output columns are named `<col>_psd`.
 
 ```{r pmstandardize}
-panel_std <- pmstandardize(panel_clean, cols = c("x", "y"), id_var = "id")
-head(panel_std[, c("id", "time", "x_psd", "y_psd")])
+panel_std <- pmstandardize(panel_clean, cols = c("a", "b", "c", "y"), id_var = "id",
+                           verbose = TRUE)
+head(panel_std[, c("id", "time", "a_psd", "b_psd", "c_psd", "y_psd")])
 ```
 
 Edge cases are handled automatically: all-NA series remain NA; single-observation series return 0; constant series (zero SD) return 0 and are filtered downstream by `iarimax()`'s `minvar` guard.
@@ -100,37 +129,31 @@ Edge cases are handled automatically: all-NA series remain NA; single-observatio
 
 ## Step 3: Linear detrending — `i_detrender()`
 
-`i_detrender()` removes the within-person linear time trend via `lm(col ~ time)` and replaces each column with the residuals (`<col>_dt`). This reduces the integration order `auto.arima()` selects, keeping models parsimonious.
+`i_detrender()` removes the within-person linear time trend via `lm(col ~ time)` and appends each column with the residuals (`<col>_dt`). This reduces the integration order `auto.arima()` selects, keeping models parsimonious.
 
 Filtering is per-column and independent: a subject can produce valid detrended residuals for one variable while receiving `NA` in another if that column fails the variance or observation-count thresholds.
 
 ```{r detrender}
-panel_dt <- i_detrender(
-  panel_std,
-  cols    = c("x_psd", "y_psd"),
-  id_var   = "id",
-  timevar = "time",
-  verbose = TRUE
-)
-head(panel_dt[, c("id", "time", "x_psd_dt", "y_psd_dt")])
+panel_dt <- i_detrender(panel_std, cols = c("a_psd", "b_psd", "c_psd", "y_psd"),
+                        id_var = "id", timevar = "time", verbose = TRUE)
+head(panel_dt[, c("id", "time", "a_psd_dt", "b_psd_dt", "c_psd_dt", "y_psd_dt")])
 ```
 
-> **Pipeline order matters.** Detrending after standardization is preferred. Reversing the order (`i_detrender()` → `pmstandardize()`) can amplify near-zero residuals to unit variance, bypassing `iarimax()`'s `minvar` filter.
+> **Pipeline order matters.** Detrending after standardization is preferred. Reversing the order (`i_detrender()` then `pmstandardize()`) can amplify near-zero residuals to unit variance, bypassing `iarimax()`'s `minvar` filter.
 
 ---
 
-## Step 4: Per-subject ARIMAX and meta-analysis — `iarimax()`
+## Step 4a: Per-subject ARIMAX and meta-analysis — `iarimax()`
 
-`iarimax()` fits one `auto.arima()` model per subject, extracts coefficients via `broom::tidy()`, and pools the focal predictor's coefficients with `metafor::rma()` (REML).
+`iarimax()` fits one `forecast::auto.arima()` model per subject, extracts coefficients via `broom::tidy()`, and pools the focal predictor's coefficients with `metafor::rma()` (REML).
 
 ```{r iarimax}
-result <- iarimax(
-  panel_dt,
-  y_series  = "y_psd_dt",
-  x_series  = "x_psd_dt",
-  id_var    = "id",
-  timevar   = "time"
-)
+result <- iarimax(panel_dt,
+                  y_series  = "y_psd_dt",
+                  x_series  = "a_psd_dt",
+                  id_var    = "id",
+                  timevar   = "time",
+                  verbose   = TRUE)
 ```
 
 ### Summary
@@ -144,10 +167,10 @@ summary(result)
 ```{r iarimax-plot, fig.width = 6, fig.height = 5}
 plot(result,
      y_series_name = "Outcome (y)",
-     x_series_name = "Predictor (x)")
+     x_series_name = "Predictor (a)")
 ```
 
-Each bar is a per-subject 95% confidence interval, colored green (significantly positive), red (significantly negative), or black (crosses zero). The blue band is the 95% CI of the REMA pooled effect.
+Each bar is a per-subject confidence interval, colored green (significantly positive), red (significantly negative), or black (crosses zero). The blue band is the 95% CI of the REMA pooled effect. Subject 12 (negative `a -> y` effect) should appear on the negative side.
 
 ### Per-subject results
 
@@ -155,65 +178,25 @@ The full individual-level output is in `$results_df`:
 
 ```{r results-df}
 head(result$results_df[, c("id", "nAR", "nI", "nMA",
-                           "estimate_x_psd_dt", "std.error_x_psd_dt",
+                           "estimate_a_psd_dt", "std.error_a_psd_dt",
                            "n_valid", "n_params", "raw_cor")])
 ```
 
 ---
 
-## Step 5: Per-subject p-values — `i_pval()`
-
-`i_pval()` attaches a `pval_<feature>` column to `results_df` using the two-tailed t-distribution with ML-based degrees of freedom (`n_valid - n_params`). These p-values differ from `lm()` because ARIMA uses `sigma² = SSR/n` rather than `SSR/(n - k)`.
-
-```{r i-pval}
-result_pval <- i_pval(result)
-result_pval$results_df[, c("id", "estimate_x_psd_dt", "pval_x_psd_dt")]
-```
-
----
-
-## Step 6: Sign Divergence / Equisyncratic Null test — `sden_test()`
-
-`sden_test()` runs a binomial test on the count of individually significant effects. Two variants are available and selected automatically based on the REMA pooled effect:
-
-- **ENT** (Equisyncratic Null Test): tests whether any-direction significant effects exceed the rate expected by chance (`alpha_arimax`). Used when the pooled effect is non-significant — i.e., no dominant direction has been established.
-- **SDT** (Sign Divergence Test): tests whether effects in the counter-pooled direction exceed chance (`alpha_arimax / 2`). Used when the pooled effect is significant, as a sensitivity check for hidden heterogeneity.
-
-The auto-selection pivot is fixed at p = 0.05, independent of `alpha_arimax`.
-
-```{r sden}
-sden <- sden_test(result_pval)
-summary(sden)
-```
-
----
-
-## Directed loop detection — `looping_machine()`
+## Step 4b: Directed loop detection — `looping_machine()`
 
 `looping_machine()` tests whether three variables form a directed positive loop (a -> b -> c -> a). It fits three I-ARIMAX legs, applies `i_pval()` to each, and computes `Loop_positive_directed`: a 0/1 indicator that is 1 only when all three focal betas are positive *and* significant at `alpha`.
 
 ```{r looping-machine}
-# Build a panel with three correlated processes
-set.seed(7)
-panel3 <- do.call(rbind, lapply(1:6, function(id) {
-  a <- rnorm(30)
-  b <- 0.4 * a + rnorm(30)
-  c <- 0.4 * b + rnorm(30)
-  data.frame(id = as.character(id), time = seq_len(30),
-             a = a, b = b, c = c, stringsAsFactors = FALSE)
-}))
-
-loop_result <- looping_machine(
-  panel3,
-  a_series = "a",
-  b_series = "b",
-  c_series = "c",
-  id_var   = "id",
-  timevar  = "time"
-)
+loop_result <- looping_machine(panel_dt,
+                               a_series = "a_psd_dt",
+                               b_series = "b_psd_dt",
+                               c_series = "c_psd_dt",
+                               id_var   = "id",
+                               timevar  = "time",
+                               verbose  = TRUE)
 ```
-
-The return value contains the merged per-subject results and each leg's full `iarimax_results` object:
 
 ```{r looping-inspect}
 # Proportion of subjects with a detected positive directed loop
@@ -229,34 +212,34 @@ Optional arguments include `covariates` (shared extra predictors for all three l
 
 ---
 
-## Full pipeline at a glance
+## Step 5: Per-subject p-values — `i_pval()`
 
-```{r full-pipeline, eval = FALSE}
-library(idionomics)
+`i_pval()` attaches a `pval_<feature>` column to `results_df` using the two-tailed t-distribution with ML-based degrees of freedom (`n_valid - n_params`).
 
-# 1. Screen raw data
-panel_clean <- i_screener(panel, cols = c("x", "y"), id_var = "id",
-                          min_sd = 0.3)
-
-# 2. Within-person standardize
-panel_std <- pmstandardize(panel_clean, cols = c("x", "y"), id_var = "id")
-
-# 3. Detrend
-panel_dt <- i_detrender(panel_std, cols = c("x_psd", "y_psd"),
-                        id_var = "id", timevar = "time")
-
-# 4. I-ARIMAX
-result <- iarimax(panel_dt, y_series = "y_psd_dt", x_series = "x_psd_dt",
-                  id_var = "id", timevar = "time")
-
-# 5. Inspect
-summary(result)
-plot(result, y_series_name = "Outcome", x_series_name = "Predictor")
-
-# 6. Per-subject p-values
+```{r i-pval}
 result_pval <- i_pval(result)
+result_pval$results_df[, c("id", "estimate_a_psd_dt", "pval_a_psd_dt")]
+```
 
-# 7. SDEN test
+---
+
+## Step 6: Sign Divergence / Equisyncratic Null test — `sden_test()`
+
+`sden_test()` runs a binomial test on the count of individually significant effects. Two variants are available and selected automatically based on the REMA pooled effect:
+
+- **ENT** (Equisyncratic Null Test): tests whether any-direction significant effects exceed the rate expected by chance (`alpha_arimax`). Used when the pooled effect is non-significant.
+- **SDT** (Sign Divergence Test): tests whether effects in the counter-pooled direction exceed chance (`alpha_arimax / 2`). Used when the pooled effect is significant.
+
+The auto-selection pivot is fixed at p = 0.05, independent of `alpha_arimax`.
+
+```{r sden}
 sden <- sden_test(result_pval)
 summary(sden)
+```
+
+You can also force a specific test:
+
+```{r sden-force}
+sden_ent <- sden_test(result, test = "ENT")
+summary(sden_ent)
 ```

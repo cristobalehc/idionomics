@@ -11,7 +11,7 @@ The package is built around intensive longitudinal data where each participant c
 
 ## The idionomic science principle
 
-Classical panel data methods (multilevel models, fixed-effects regression) estimate one set of parameters shared — or partially shared — across all units of an ensemble. If the focus of interest is the trajectory of individuals, this is only sensible under hard-to-meet assumptions, such as exchangeability and/or ergodicity. If these assumptions are not met, ensemble averages may systematically obscure individual differences: an average positive effect may coexist with a significant subset of individuals for whom the effect is negative, nonsignificant, or zero. 
+Classical longitudinal methods (e.g., multilevel models) estimate one set of parameters shared — or partially shared — across all units of an ensemble. If the focus of interest is the trajectory of individuals, this is only sensible under hard-to-meet assumptions, such as exchangeability and/or ergodicity. If these assumptions are not met, ensemble averages may systematically obscure individual differences: an average positive effect may coexist with a significant subset of individuals for whom the effect is negative, nonsignificant, or zero. 
 
 Idionomic science inverts the order of operations:
 
@@ -310,7 +310,7 @@ panel <- rbind(panel, s10, s11, s12)
 
 # Step 1: Quality screening on raw data (before standardization)
 panel_clean <- i_screener(panel, cols = c("a", "b", "c", "y"), id_var = "id",
-                        min_n_subject = 20, min_sd = 0.3, max_mode_pct = 0.80,
+                        min_n_subject = 20, min_sd = 0.5, max_mode_pct = 0.80,
                         verbose = TRUE)
 
 # Step 2: Within-person standardization
