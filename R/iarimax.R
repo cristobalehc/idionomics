@@ -85,6 +85,14 @@
 #' *Journal of Contextual Behavioral Science*, *32*, 100728.
 #' \url{https://doi.org/10.1016/j.jcbs.2024.100728}
 #'
+#' Hyndman, R. J., & Khandakar, Y. (2008). Automatic time series forecasting:
+#' the forecast package for R. *Journal of Statistical Software*, *27*(3), 1--22.
+#' \url{https://doi.org/10.18637/jss.v027.i03}
+#'
+#' Viechtbauer, W. (2010). Conducting meta-analyses in R with the metafor
+#' package. *Journal of Statistical Software*, *36*(3), 1--48.
+#' \url{https://doi.org/10.18637/jss.v036.i03}
+#'
 #' @seealso [i_screener()], [pmstandardize()], [i_detrender()] for
 #'   preprocessing; [i_pval()] for per-subject p-values; [sden_test()] for
 #'   sign divergence / equisyncratic null tests; [looping_machine()] for
