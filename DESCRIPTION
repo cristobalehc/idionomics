@@ -22,6 +22,7 @@ Description: A toolkit for idionomic science, a research philosophy that places 
     ('looping_machine()').
 URL: https://github.com/cristobalehc/idionomics
 BugReports: https://github.com/cristobalehc/idionomics/issues
+Depends: R (>= 4.1.0)
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -40,6 +41,6 @@ Imports:
 Suggests:
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.2.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3

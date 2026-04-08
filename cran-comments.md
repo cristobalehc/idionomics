@@ -5,7 +5,7 @@
 ## Test environments
 
 - macOS (local, R 4.4.1)
-- Windows (win-builder, R-devel)
+- Windows (local, R 4.3.2)
 
 ## Comments
 
