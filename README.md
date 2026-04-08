@@ -15,7 +15,7 @@ Classical panel data methods (multilevel models, fixed-effects regression) estim
 
 Idionomic science inverts the order of operations:
 
-1. **Unit first.** Fit a model to each person's time series independently, capturing that person's unique dynamics, autocorrelation structure, and effect sizes.
+1. **Unit first.** Fit a model to each person's time series independently, capturing that person's unique dynamics, residual structure, and effect sizes.
 2. **Group later.** Aggregate the individual estimates with meta-analytic methods that explicitly represent and quantify heterogeneity across people (unsupervised clustering and other estimate-based methods are planned for future releases).
 
 This preserves the individual's data structure, produces person-specific estimates that can be reported back to participants or explored as a basis for personalized intervention, and provides honest group-level summaries that distinguish "the average effect is X" from "most people show effect X", "the average effect is null but there are significant effects at both sides", and similar patterns that a single pooled estimate might drastically obscure.
@@ -87,7 +87,7 @@ Three configurable criteria (all optional except `min_n_subject`):
 library(idionomics)
 
 set.seed(42)
-panel <- do.call(rbind, lapply(1:10, function(id) {
+panel <- do.call(rbind, lapply(1:9, function(id) {
   a <- rnorm(50)
   b <- 0.4 * a + rnorm(50)
   c <- 0.4 * b + rnorm(50)
@@ -97,14 +97,35 @@ panel <- do.call(rbind, lapply(1:10, function(id) {
              stringsAsFactors = FALSE)
 }))
 
+# Subject 10: near-constant "a" — will be caught by i_screener(min_sd = 0.5)
+s10 <- data.frame(id = "10", time = seq_len(50),
+                  a = rep(3, 50), b = rnorm(50), c = rnorm(50),
+                  y = rnorm(50), stringsAsFactors = FALSE)
+
+# Subject 11: full positive loop (a -> b -> c -> a)
+a11 <- rnorm(50); b11 <- 0.6 * a11 + rnorm(50, sd = 0.5)
+c11 <- 0.6 * b11 + rnorm(50, sd = 0.5)
+s11 <- data.frame(id = "11", time = seq_len(50),
+                  a = a11 + 0.4 * c11, b = b11, c = c11,
+                  y = 0.5 * a11 + rnorm(50), stringsAsFactors = FALSE)
+
+# Subject 12: negative a -> y effect
+a12 <- rnorm(50)
+s12 <- data.frame(id = "12", time = seq_len(50),
+                  a = a12, b = 0.4 * a12 + rnorm(50),
+                  c = rnorm(50), y = -0.5 * a12 + rnorm(50),
+                  stringsAsFactors = FALSE)
+
+panel <- rbind(panel, s10, s11, s12)
+
 # Remove subjects with too few obs or low raw variance, before standardizing
 panel_clean <- i_screener(panel, cols = c("a", "b", "c", "y"), id_var = "id",
-                        min_n_subject = 20, min_sd = 0.5)
+                        min_n_subject = 20, min_sd = 0.5, verbose = TRUE)
 
 # Inspect quality without committing to removal
 report <- i_screener(panel, cols = c("a", "b", "c", "y"), id_var = "id",
                    min_n_subject = 20, min_sd = 0.5, max_mode_pct = 0.80,
-                   mode = "report")
+                   mode = "report", verbose = TRUE)
 print(report)
 
 # Flag subjects for inspection, then decide
@@ -125,7 +146,8 @@ Computes `(x - person_mean) / person_sd` for each person × column combination. 
 
 ```r
 # Standardize all four variables within each person
-panel_std <- pmstandardize(panel_clean, cols = c("a", "b", "c", "y"), id_var = "id")
+panel_std <- pmstandardize(panel_clean, cols = c("a", "b", "c", "y"), id_var = "id",
+                          verbose = TRUE)
 head(panel_std)
 ```
 
@@ -139,11 +161,11 @@ i_detrender(df, cols, id_var, timevar,
             verbose = FALSE, append = TRUE)
 ```
 
-Fits `lm(col ~ time)` within each subject and replaces the column with the residuals (`<col>_dt`). Subjects with too few observations, insufficient pre-detrend variance, or near-zero post-detrend variance receive `NA` — independently for each column.
+Fits `lm(col ~ time)` within each subject and appends the column with the residuals (`<col>_dt`). Subjects with too few observations, insufficient pre-detrend variance, or near-zero post-detrend variance receive `NA` — independently for each column.
 
 ```r
 panel_dt <- i_detrender(panel_std, cols = c("a_psd", "b_psd", "c_psd", "y_psd"),
-                        id_var = "id", timevar = "time")
+                        id_var = "id", timevar = "time", verbose = TRUE)
 head(panel_dt)
 ```
 
@@ -159,14 +181,15 @@ iarimax(dataframe, min_n_subject = 20, minvar = 0.01,
         keep_models = FALSE, verbose = FALSE)
 ```
 
-Fits one `auto.arima()` model per subject, extracts coefficients via `broom::tidy()`, and pools the focal predictor's coefficients with `metafor::rma()`. The `fixed_d` argument optionally fixes the differencing order across all subjects to ensure coefficients are on the same scale (e.g., `fixed_d = 0` for levels, `fixed_d = 1` for changes); AR and MA orders are always selected automatically per subject.
+Fits one `forecast::auto.arima()` model per subject, extracts coefficients via `broom::tidy()`, and pools the focal predictor's coefficients with `metafor::rma()`. The `fixed_d` argument optionally fixes the differencing order across all subjects to ensure coefficients are on the same scale (e.g., `fixed_d = 0` for levels, `fixed_d = 1` for changes); AR and MA orders are always selected automatically per subject.
 
 ```r
 result <- iarimax(panel_dt,
                   y_series  = "y_psd_dt",
                   x_series  = "a_psd_dt",
                   id_var    = "id",
-                  timevar   = "time")
+                  timevar   = "time",
+                  verbose   = TRUE)
 
 summary(result)   # prints subject counts, direction/significance counts, REMA
 plot(result)      # caterpillar plot with RE-MA overlay
@@ -177,7 +200,7 @@ plot(result)      # caterpillar plot with RE-MA overlay
 | Field | Description |
 |---|---|
 | `$results_df` | Per-subject ARIMA orders, estimates, SEs, `n_valid`, `n_params`, `raw_cor` |
-| `$meta_analysis` | `metafor::rma` object (or `NULL` if fewer than 2 valid models) |
+| `$meta_analysis` | `metafor::rma` object (or `NULL` if rma failed) |
 | `$case_number_detail` | Subject counts: original, filtered, ARIMA-failed, analyzed |
 | `$models` | Raw `Arima` objects (only if `keep_models = TRUE`) |
 
@@ -189,7 +212,7 @@ plot(result)      # caterpillar plot with RE-MA overlay
 i_pval(iarimax_object, feature = NULL)
 ```
 
-Attaches a `pval_<feature>` column to `results_df` using the two-tailed t-distribution with ML-based degrees of freedom (`n_valid - n_params`). P-values differ from `lm()` because ARIMA uses `sigma² = SSR/n`, not `SSR/(n-k)`.
+Attaches a `pval_<feature>` column to `results_df` using the two-tailed t-distribution with ML-based degrees of freedom (`n_valid - n_params`).
 
 ```r
 result_pval <- i_pval(result)
@@ -208,7 +231,7 @@ sden_test(iarimax_object, alpha_arimax = 0.05, alpha_binom = NULL,
 A binomial test on the count of individually significant effects. Two test variants:
 
 - **ENT** (Equisyncratic Null Test): tests whether *any-direction* significant effects exceed chance. Selected automatically when the pooled REMA effect is non-significant.
-- **SDT** (Sign Divergence Test): tests whether effects in the *counter-pooled* direction exceed chance. Selected automatically when the pooled REMA effect is significant, as a sensitivity check for heterogeneity.
+- **SDT** (Sign Divergence Test): tests whether effects in the *counter-pooled* direction exceed chance. Selected automatically when the pooled REMA effect is significant. 
 
 ```r
 sden <- sden_test(result)
@@ -236,7 +259,8 @@ Fits three I-ARIMAX legs (a→b, b→c, c→a), applies `i_pval()` to each, and 
 loop_result <- looping_machine(panel_dt,
                                a_series = "a_psd_dt", b_series = "b_psd_dt",
                                c_series = "c_psd_dt",
-                               id_var = "id", timevar = "time")
+                               id_var = "id", timevar = "time",
+                               verbose = TRUE)
 
 # Proportion of subjects with detected positive directed loop
 mean(loop_result$loop_df$Loop_positive_directed, na.rm = TRUE)
@@ -253,7 +277,7 @@ summary(loop_result$iarimax_a_to_b)
 library(idionomics)
 
 set.seed(42)
-panel <- do.call(rbind, lapply(1:10, function(id) {
+panel <- do.call(rbind, lapply(1:9, function(id) {
   a <- rnorm(50)
   b <- 0.4 * a + rnorm(50)
   c <- 0.4 * b + rnorm(50)
@@ -266,21 +290,39 @@ panel <- do.call(rbind, lapply(1:10, function(id) {
   )
 }))
 
+# Special subjects
+s10 <- data.frame(id = "10", time = seq_len(50),
+                  a = rep(3, 50), b = rnorm(50), c = rnorm(50),
+                  y = rnorm(50), stringsAsFactors = FALSE)
+a11 <- rnorm(50); b11 <- 0.6 * a11 + rnorm(50, sd = 0.5)
+c11 <- 0.6 * b11 + rnorm(50, sd = 0.5)
+s11 <- data.frame(id = "11", time = seq_len(50),
+                  a = a11 + 0.4 * c11, b = b11, c = c11,
+                  y = 0.5 * a11 + rnorm(50), stringsAsFactors = FALSE)
+a12 <- rnorm(50)
+s12 <- data.frame(id = "12", time = seq_len(50),
+                  a = a12, b = 0.4 * a12 + rnorm(50),
+                  c = rnorm(50), y = -0.5 * a12 + rnorm(50),
+                  stringsAsFactors = FALSE)
+panel <- rbind(panel, s10, s11, s12)
+
 # Step 1: Quality screening on raw data (before standardization)
 panel_clean <- i_screener(panel, cols = c("a", "b", "c", "y"), id_var = "id",
-                        min_n_subject = 20, min_sd = 0.3, max_mode_pct = 0.80)
+                        min_n_subject = 20, min_sd = 0.3, max_mode_pct = 0.80,
+                        verbose = TRUE)
 
 # Step 2: Within-person standardization
-panel_std <- pmstandardize(panel_clean, cols = c("a", "b", "c", "y"), id_var = "id")
+panel_std <- pmstandardize(panel_clean, cols = c("a", "b", "c", "y"), id_var = "id",
+                          verbose = TRUE)
 
 # Step 3: Linear detrending
 panel_dt <- i_detrender(panel_std, cols = c("a_psd", "b_psd", "c_psd", "y_psd"),
-                        id_var = "id", timevar = "time")
+                        id_var = "id", timevar = "time", verbose = TRUE)
 
 # Step 4a: I-ARIMAX (single predictor)
 result <- iarimax(panel_dt,
                   y_series = "y_psd_dt", x_series = "a_psd_dt",
-                  id_var = "id", timevar = "time")
+                  id_var = "id", timevar = "time", verbose = TRUE)
 
 summary(result)
 plot(result)
@@ -289,7 +331,8 @@ plot(result)
 loop_result <- looping_machine(panel_dt,
                                a_series = "a_psd_dt", b_series = "b_psd_dt",
                                c_series = "c_psd_dt",
-                               id_var = "id", timevar = "time")
+                               id_var = "id", timevar = "time",
+                               verbose = TRUE)
 
 mean(loop_result$loop_df$Loop_positive_directed, na.rm = TRUE)
 
