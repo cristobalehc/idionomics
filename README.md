@@ -360,8 +360,4 @@ summary(sden)
 
 ---
 
-## Disclaimer
-
-**idionomics** is free, open-source software provided "as-is", without warranty of any kind — express or implied — under the [MIT License](LICENSE.md). The authors are not liable for any damages or losses arising from the use of this software.
-
 Statistical software can produce results that are technically valid but analytically inappropriate for a given context. Users are encouraged to review the methods and code, inspect their data, and exercise independent statistical judgment before reporting findings.
