@@ -13,4 +13,4 @@
 
 ## Comments
 
-First submission.
+Resubmission. Fixed the relative file URI `LICENSE.md` in `README.md` as requested by Dr. Ligges.
