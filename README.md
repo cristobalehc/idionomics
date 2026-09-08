@@ -26,9 +26,8 @@ This preserves the individual's data structure, produces person-specific estimat
 ## Installation
 
 ```r
-# Install from a local source directory (development version)
-install.packages("devtools")
-devtools::install("/path/to/idionomics")
+#Install from CRAN (latest stable version)
+install.packages("idionomics")
 
 # Or install directly from GitHub:
 devtools::install_github("cristobalehc/idionomics")
